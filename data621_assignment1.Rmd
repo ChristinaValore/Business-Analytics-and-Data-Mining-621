@@ -1,0 +1,105 @@
+---
+title: 'Assignment 1: Data 621'
+author: "Critical Thinking Group 5 - Christina Valore"
+date: "9/16/2019"
+output: html_document
+---
+
+```{r,message=F, warning=F}
+library(tidyverse); library(dplyr); library(psych); library(corrplot); library (ggplot2)
+```
+
+## Money Ball
+
+Response variable: Target_Wins
+Predictor variable(s): ?
+
+### Import data
+
+All of the variables are numerical. 
+```{r }
+
+train <-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/moneyball-training-data.csv") 
+
+eval <-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/moneyball-evaluation-data.csv") 
+
+#view the data
+head(train)
+head(eval)
+
+#remove index column
+train <- select(train,-1)
+eval <- select(eval,-1)
+
+```
+
+### Stats about our data
+
+I want to focus in on the positive variables in addition to the runs allowed. Let us first take a look at their overal stats (mean, median, SD), then we take a look visually at their histrograms to sdee their distribution.
+
+```{r}
+#get stats of train set
+describe(train)
+```
+
+### Histograms
+
+We can see batting_HR and pitching_HR are not normally distributed which we will need to account for whwen we build our model. Batting_H, batting_2B and batting_HBP look the most normally distributed. 
+
+```{r}
+#view graphs in 2 rows and 2 columns
+par(mfrow = c(2,2))
+
+#homerun distribution
+hist(train$TEAM_BATTING_HR) 
+
+hist(train$TEAM_PITCHING_HR) 
+
+#hits distr.
+hist(train$TEAM_BATTING_H) 
+
+#doubles ditr.
+hist(train$TEAM_BATTING_2B) 
+
+#triples distr.
+hist(train$TEAM_BATTING_3B)
+
+#walks
+hist(train$TEAM_BATTING_BB)
+
+#batter hit by pitch
+hist(train$TEAM_BATTING_HBP)
+
+#stolen bases
+hist(train$TEAM_BASERUN_SB)
+
+#double plays
+hist(train$TEAM_FIELDING_DP)
+
+#strikeouts by pitcher
+hist(train$TEAM_PITCHING_SO)
+
+```
+
+### Add run difference variable
+
+Not sure how to calculate runs from the given data?
+```{r}
+train$RUN_DIFF = train$TEAM_BATTING_HR - train$TEAM_PITCHING_HR
+```
+
+I wanted to plot here Run diff vs Wins, however this graph looks off, there should be some runs in the positive - again I think we need an equation to calculate overal runs. 
+```{r}
+plot(train$RUN_DIFF, train$TARGET_WINS, xlab = "Homeruns", ylab = "Wins", title("Wins vs. homeruns"))
+
+```
+
+
+Sources: 
+
+http://www.sthda.com/english/wiki/visualize-correlation-matrix-using-correlogram
+
+https://kharshit.github.io/blog/2017/07/28/moneyball-how-linear-regression-changed-baseball
+
+https://towardsdatascience.com/linear-regression-moneyball-part-1-b93b3b9f5b53
+
