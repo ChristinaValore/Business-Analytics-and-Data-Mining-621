@@ -146,3 +146,7 @@ https://kharshit.github.io/blog/2017/07/28/moneyball-how-linear-regression-chang
 
 https://towardsdatascience.com/linear-regression-moneyball-part-1-b93b3b9f5b53
 
+http://r-statistics.co/Outlier-Treatment-With-R.html
+
+https://blog.datascienceheroes.com/exploratory-data-analysis-in-r-intro/
+
