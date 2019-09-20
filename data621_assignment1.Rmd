@@ -20,30 +20,27 @@ Predictor variable(s): ?
 
 ### Data Analysis
 
-First we import the data into a GitHub repo so files are easily accessed by the team. Then we remove any unnecessary columns such as 'index', which plays no role in our analysis. Once completed, we view the top of each dataset to ensure data was imported in the correct format.
+First, we import data from our GitHub repo, then we remove any unnecessary columns such as 'index', which plays no role in our analysis. Once completed, we view the top of each dataset to ensure data was imported in the correct format.
+
 ```{r }
-
+# import data
 train <-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/moneyball-training-data.csv") 
-
 eval <-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/moneyball-evaluation-data.csv") 
 
-#remove index column
-train <- select(train,-1)
+train <- select(train,-1) # remove index column, which is first column in both datasets
 eval <- select(eval,-1)
 
-#view data for both sets, notice the index column has been removed
-head (train)
+head (train) # view data for both sets, notice the index column has been removed
 head (eval)
 
 ```
 
 ### Statistics
 
-The summary function reveals there are a considerable amount of NA's and some variables have a min of 0, which can be possible in baseball, however a variable with too many zeros will be unuseful. Additonally some variables have max values that look far off from the 3rd quartile, i.e. team_batting_3B has the 3rd q at 72, while max is 223.
+The summary function reveals there are a considerable amount of NA's and some variables have a min of 0, which can be possible in baseball, however a variable with too many zeros will be unuseful. Additonally some variables have max values that look far off from the 3rd quartile, i.e. team_batting_3B has the 3rd q at 72, while max is 223. These could be possible outliers.
 
 ```{r}
-#univariate view of basic stats
-summary(train)
+summary(train) # univariate view of basic stats
 ```
 
 ### Zeros and NA values
@@ -52,59 +49,79 @@ Using the df_status function from the funModeling package, we see that the quant
 
 The NA values seem to be more discerning as several of the variable have high percentage NA's. Specifically the values, baserun_CS and batting_HBP which has 33.92% and 91.61% NA's respectively. 
 
-These variables will need to be excluded from our analysis as we only want variables with less than 20% NA's. 
-
 ```{r}
 #gives us information about 0's, NA's, variable type, and unique values
 df_status(train)
 ```
 
+These variables will need to be excluded from our analysis as we only want variables with less than 20% NA's. 
 
 ```{r}
-#get stats of train set
-describe(train)
+train <- subset(train, select = -c(TEAM_BASERUN_CS,TEAM_BATTING_HBP)) # drop both variable columns from data frame
+head(train) # check columns are removed
 ```
 
-### Histograms
 
-We can see batting_HR and pitching_HR are not normally distributed which we will need to account for whwen we build our model. Batting_H, batting_2B and batting_HBP look the most normally distributed. 
+### Outliers
+
+Since this will be a multi-variable regression, we want to consider how all variables will affect the target_wins variable. This is done using Cook's distance, which calculates the influence each point (row) has on the predicted outcome. 
 
 ```{r}
-#view graphs in 2 rows and 2 columns
-par(mfrow = c(2,2))
+m <- lm(TARGET_WINS ~ ., data=train) # model of data with all variables considered
 
-#homerun distribution
-hist(train$TEAM_BATTING_HR) 
+cook <- cooks.distance(m)
 
-hist(train$TEAM_PITCHING_HR) 
+plot(cook, pch="*", cex=2, main="Cook's Distance: Influential Observations") # plot Cook's distance
+abline(h = 4*mean(cook, na.rm=T), col="red") # add cutoff line, which is equivalent to 4*mean
+text(x=1:length(cook)+1, y=cook, labels=ifelse(cook>4*mean(cook, na.rm=T),names(cook),""), col="red") # add labels for points (rows)
+```
 
-#hits distr.
-hist(train$TEAM_BATTING_H) 
+We have 84 rows that are influential to the predicted outcome, target_wins. We can take this one step further, using the car package to to find which row is the most influential
 
-#doubles ditr.
-hist(train$TEAM_BATTING_2B) 
+```{r}
+influential <- as.numeric(names(cook)[(cook > 4*mean(cook, na.rm=T))]) # influential row numbers
 
-#triples distr.
-hist(train$TEAM_BATTING_3B)
+head(train[influential, ]) # show rows that match influential numbers
+```
 
-#walks
-hist(train$TEAM_BATTING_BB)
+We can see the most influential outlier is row 205. In the next section, we will decide on how to handle these 84 outliers. 
 
-#batter hit by pitch
-hist(train$TEAM_BATTING_HBP)
+```{r}
+car::outlierTest(m)
+```
 
-#stolen bases
-hist(train$TEAM_BASERUN_SB)
+### Graphs
 
-#double plays
-hist(train$TEAM_FIELDING_DP)
+Batting_H, batting_2B and batting_HBP look the most normally distributed. 
 
-#strikeouts by pitcher
-hist(train$TEAM_PITCHING_SO)
+```{r}
+
+par(mfrow = c(3,3)) #view graphs in 3x3 view
+
+hist(train$TEAM_BATTING_HR) # homerun 
+
+hist(train$TEAM_PITCHING_HR) # homeruns allowed
+
+hist(train$TEAM_BATTING_H) # hits 
+
+hist(train$TEAM_BATTING_2B) # doubles 
+
+hist(train$TEAM_BATTING_3B) # triples 
+
+hist(train$TEAM_BATTING_BB) # walks
+
+hist(train$TEAM_BASERUN_SB) # stolen 
+
+hist(train$TEAM_FIELDING_DP) # double 
+
+hist(train$TEAM_PITCHING_SO) # strikeouts by pitcher
 
 ```
 
-### Add run difference variable
+
+## Data Preparation
+
+### Add variable
 
 Not sure how to calculate runs from the given data?
 ```{r}
@@ -117,6 +134,9 @@ plot(train$RUN_DIFF, train$TARGET_WINS, xlab = "Homeruns", ylab = "Wins", title(
 
 ```
 
+## Build Models
+
+## Select Models
 
 Sources: 
 
