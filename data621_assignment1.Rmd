@@ -1,41 +1,64 @@
 ---
 title: 'Assignment 1: Data 621'
-author: "Critical Thinking Group 5 - Christina Valore"
+author: "Critical Thinking Group 5 - Christina Valore, Henry Vasquez, Chunhui Zhu, Chunmei Zhu"
 date: "9/16/2019"
 output: html_document
 ---
 
 ```{r,message=F, warning=F}
-library(tidyverse); library(dplyr); library(psych); library(corrplot); library (ggplot2)
+library(tidyverse); library(dplyr); library(psych); library(corrplot); library (ggplot2); library(funModeling) 
 ```
 
 ## Money Ball
 
+In this homework assignment, you will explore, analyze and model a data set containing approximately 2200 records. Each record represents a professional baseball team from the years 1871 to 2006 inclusive. Each record has the performance of the team for the given year, with all of the statistics adjusted to match the performance of a 162 game season.
+
+Your objective is to build a multiple linear regression model on the training data to predict the number of wins for the team. You can only use the variables given to you (or variables that you derive from the variables provided). Below is a short description of the variables of interest in the data set:
+
 Response variable: Target_Wins
 Predictor variable(s): ?
 
-### Import data
+### Data Analysis
 
-All of the variables are numerical. 
+First we import the data into a GitHub repo so files are easily accessed by the team. Then we remove any unnecessary columns such as 'index', which plays no role in our analysis. Once completed, we view the top of each dataset to ensure data was imported in the correct format.
 ```{r }
 
 train <-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/moneyball-training-data.csv") 
 
 eval <-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/moneyball-evaluation-data.csv") 
 
-#view the data
-head(train)
-head(eval)
-
 #remove index column
 train <- select(train,-1)
 eval <- select(eval,-1)
 
+#view data for both sets, notice the index column has been removed
+head (train)
+head (eval)
+
 ```
 
-### Stats about our data
+### Statistics
 
-I want to focus in on the positive variables in addition to the runs allowed. Let us first take a look at their overal stats (mean, median, SD), then we take a look visually at their histrograms to sdee their distribution.
+The summary function reveals there are a considerable amount of NA's and some variables have a min of 0, which can be possible in baseball, however a variable with too many zeros will be unuseful. Additonally some variables have max values that look far off from the 3rd quartile, i.e. team_batting_3B has the 3rd q at 72, while max is 223.
+
+```{r}
+#univariate view of basic stats
+summary(train)
+```
+
+### Zeros and NA values
+
+Using the df_status function from the funModeling package, we see that the quantity of zeros (q_zeros) is quite low for all variables. This can be confirmed by percentage of zeros (p_zeros) as all fall below 1%. 
+
+The NA values seem to be more discerning as several of the variable have high percentage NA's. Specifically the values, baserun_CS and batting_HBP which has 33.92% and 91.61% NA's respectively. 
+
+These variables will need to be excluded from our analysis as we only want variables with less than 20% NA's. 
+
+```{r}
+#gives us information about 0's, NA's, variable type, and unique values
+df_status(train)
+```
+
 
 ```{r}
 #get stats of train set
