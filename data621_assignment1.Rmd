@@ -16,7 +16,7 @@ In this homework assignment, you will explore, analyze and model a data set cont
 Your objective is to build a multiple linear regression model on the training data to predict the number of wins for the team. You can only use the variables given to you (or variables that you derive from the variables provided). Below is a short description of the variables of interest in the data set:
 
 Response variable: Target_Wins
-Predictor variable(s): ?
+Predictor variable(s): Target_Wins = (team batting base hits + team batting walks) - (team pitching hits allowed + team pitching walks allowed)
 
 ### Data Analysis
 
@@ -43,6 +43,7 @@ The summary function reveals there are a considerable amount of NA's and some va
 summary(train) # univariate view of basic stats
 ```
 
+
 ### Zeros and NA values
 
 Using the df_status function from the funModeling package, we see that the quantity of zeros (q_zeros) is quite low for all variables. This can be confirmed by percentage of zeros (p_zeros) as all fall below 1%. 
@@ -62,12 +63,49 @@ head(train) # check columns are removed
 ```
 
 
-### Outliers
+### Graphs
 
-Since this will be a multi-variable regression, we want to consider how all variables will affect the target_wins variable. This is done using Cook's distance, which calculates the influence each point (row) has on the predicted outcome. 
+After some research, we decide to investigate the hits, walks and hits allowed and walks allowed as we think these four variables overall will have an impact on the wins.
+
+By examining the scatter plots, we see that team batting base hits and team batting walks seem to have a linear relationship to wins as those variables increase it looks as if wins increase as well. 
+
+Team pitching hits allowed and team pitching walks allowed, are not as clear and may not have a linear relationship to wins. They both also look to have more extreme ouliers as we saw in the summary. 
 
 ```{r}
-m <- lm(TARGET_WINS ~ ., data=train) # model of data with all variables considered
+par(mfrow = c(2,2)) #view graphs in 2x2 view
+
+plot(TARGET_WINS ~ TEAM_BATTING_H,train) # batting hits
+
+plot(TARGET_WINS ~ TEAM_BATTING_BB,train) # batting walks
+
+plot(TARGET_WINS ~ TEAM_PITCHING_H,train) # pitching hits allowed
+
+plot(TARGET_WINS ~ TEAM_PITCHING_BB,train) # pitching walks allowed
+
+```
+
+Batting_H and Batting_BB look to be the most normally distributed, where pitching_H and pitching_BB seem to be more concetrated to the left again indicating there may not be a linear relationship to target wins. 
+
+```{r}
+
+par(mfrow = c(2,2)) #view graphs in 2x2 view
+
+hist(train$TEAM_BATTING_H) # hits 
+
+hist(train$TEAM_BATTING_BB) # walks
+
+hist(train$TEAM_PITCHING_H) # hits allowed
+
+hist(train$TEAM_PITCHING_BB) #walks allowed
+
+```
+
+### Outliers
+
+Since this will be a multi-variable regression, we want to consider how all four variables will affect the wins. This is done by using Cook's distance, which calculates the influence each point (row) has on the predicted outcome. 
+
+```{r}
+m <- lm(TARGET_WINS ~ TEAM_BATTING_H + TEAM_BATTING_BB + TEAM_PITCHING_H + TEAM_PITCHING_BB, data=train) # model with four variables considered
 
 cook <- cooks.distance(m)
 
@@ -76,48 +114,21 @@ abline(h = 4*mean(cook, na.rm=T), col="red") # add cutoff line, which is equival
 text(x=1:length(cook)+1, y=cook, labels=ifelse(cook>4*mean(cook, na.rm=T),names(cook),""), col="red") # add labels for points (rows)
 ```
 
-We have 84 rows that are influential to the predicted outcome, target_wins. We can take this one step further, using the car package to to find which row is the most influential
+We have 41 rows that are influential to the predicted wins, with row 1342 being the most influential. Aside from about 4 other outliers the rest seem to be pretty close to 4*mean. 
+
+We can see the full view of the influential numbers by adding to a dataframe and viewing the head. 
 
 ```{r}
-influential <- as.numeric(names(cook)[(cook > 4*mean(cook, na.rm=T))]) # influential row numbers
+influential <- as.numeric(names(cook)[(cook > 4*mean(cook, na.rm=T))]) # add influential rows to dataframe
 
 head(train[influential, ]) # show rows that match influential numbers
 ```
 
-We can see the most influential outlier is row 205. In the next section, we will decide on how to handle these 84 outliers. 
+For confirmation, we can use the Car package to verify most influential outlier is row 1342. In the next section, we will decide on how to handle these 41 outliers. 
 
 ```{r}
 car::outlierTest(m)
 ```
-
-### Graphs
-
-Batting_H, batting_2B and batting_HBP look the most normally distributed. 
-
-```{r}
-
-par(mfrow = c(3,3)) #view graphs in 3x3 view
-
-hist(train$TEAM_BATTING_HR) # homerun 
-
-hist(train$TEAM_PITCHING_HR) # homeruns allowed
-
-hist(train$TEAM_BATTING_H) # hits 
-
-hist(train$TEAM_BATTING_2B) # doubles 
-
-hist(train$TEAM_BATTING_3B) # triples 
-
-hist(train$TEAM_BATTING_BB) # walks
-
-hist(train$TEAM_BASERUN_SB) # stolen 
-
-hist(train$TEAM_FIELDING_DP) # double 
-
-hist(train$TEAM_PITCHING_SO) # strikeouts by pitcher
-
-```
-
 
 ## Data Preparation
 
