@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r,message=F, warning=F}
-library(tidyverse); library(dplyr); library(psych); library(corrplot); library (ggplot2); library(funModeling); library(Hmisc)
+library(tidyverse); library(dplyr); library(psych); library(corrplot); library (ggplot2); library(funModeling); library(Hmisc); library (car); library(caTools)
 ```
 
 ## Money Ball
@@ -24,15 +24,25 @@ First, we import data from our GitHub repo, then we remove any unnecessary colum
 
 ```{r }
 # import data
-train <-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/moneyball-training-data.csv") 
+data <-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/moneyball-training-data.csv") 
 eval <-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/moneyball-evaluation-data.csv") 
 
-train <- select(train,-1) # remove index column, which is first column in both datasets
+data <- select(data,-1) # remove index column, which is first column in both datasets
 eval <- select(eval,-1)
 
-head (train) # view data for both sets, notice the index column has been removed
+head (data) # view data for both sets, notice the index column has been removed
 head (eval)
+```
 
+We now will split the training data set into two sets: train_1 and test_1. The test_1 will help us validate our model. We will save the eval set to run predictions.
+```{r}
+set.seed(123)   #  set seed to ensure you always have same random numbers generated
+sample <- sample.split(data,SplitRatio = 0.80) 
+train_1 <- subset(data, sample ==TRUE) 
+test_1 <- subset(data, sample==FALSE)
+
+dim(train_1)
+dim(test_1)
 ```
 
 ### Statistics
@@ -40,7 +50,7 @@ head (eval)
 The summary function reveals there are a considerable amount of NA's and some variables have a min of 0, which can be possible in baseball, however a variable with too many zeros will be unuseful. Additonally some variables have max values that look far off from the 3rd quartile, i.e. team_batting_3B has the 3rd q at 72, while max is 223. These could be possible outliers.
 
 ```{r}
-summary(train) # univariate view of basic stats
+summary(train_1) # univariate view of basic stats
 ```
 
 
@@ -52,14 +62,14 @@ The NA values seem to be more discerning as several of the variable have high pe
 
 ```{r}
 #gives us information about 0's, NA's, variable type, and unique values
-df_status(train)
+df_status(train_1)
 ```
 
 These variables will need to be excluded from our analysis as we only want variables with less than 20% NA's. 
 
 ```{r}
-train <- subset(train, select = -c(TEAM_BASERUN_CS,TEAM_BATTING_HBP)) # drop both variable columns from data frame
-head(train) # check columns are removed
+train_1 <- subset(train_1, select = -c(TEAM_BASERUN_CS,TEAM_BATTING_HBP)) # drop both variable columns from dataframe
+head(train_1) # check columns are removed
 ```
 
 
@@ -74,13 +84,13 @@ Team pitching hits allowed and team pitching walks allowed, are not as clear and
 ```{r}
 par(mfrow = c(2,2)) #view graphs in 2x2 view
 
-plot(TARGET_WINS ~ TEAM_BATTING_H,train) # batting hits
+plot(TARGET_WINS ~ TEAM_BATTING_H,train_1) # batting hits
 
-plot(TARGET_WINS ~ TEAM_BATTING_BB,train) # batting walks
+plot(TARGET_WINS ~ TEAM_BATTING_BB,train_1) # batting walks
 
-plot(TARGET_WINS ~ TEAM_PITCHING_H,train) # pitching hits allowed
+plot(TARGET_WINS ~ TEAM_PITCHING_H,train_1) # pitching hits allowed
 
-plot(TARGET_WINS ~ TEAM_PITCHING_BB,train) # pitching walks allowed
+plot(TARGET_WINS ~ TEAM_PITCHING_BB,train_1) # pitching walks allowed
 
 ```
 
@@ -90,13 +100,13 @@ Batting_H and Batting_BB look to be the most normally distributed, where pitchin
 
 par(mfrow = c(2,2)) #view graphs in 2x2 view
 
-hist(train$TEAM_BATTING_H) # hits 
+hist(train_1$TEAM_BATTING_H) # hits 
 
-hist(train$TEAM_BATTING_BB) # walks
+hist(train_1$TEAM_BATTING_BB) # walks
 
-hist(train$TEAM_PITCHING_H) # hits allowed
+hist(train_1$TEAM_PITCHING_H) # hits allowed
 
-hist(train$TEAM_PITCHING_BB) #walks allowed
+hist(train_1$TEAM_PITCHING_BB) #walks allowed
 
 ```
 
@@ -105,7 +115,7 @@ hist(train$TEAM_PITCHING_BB) #walks allowed
 Since this will be a multi-variable regression, we want to consider how all four variables will affect the wins. This is done by using Cook's distance, which calculates the influence each point (row) has on the predicted outcome. 
 
 ```{r}
-m <- lm(TARGET_WINS ~ TEAM_BATTING_H + TEAM_BATTING_BB - (TEAM_PITCHING_H + TEAM_PITCHING_BB), data=train) # model with four variables considered
+m <- lm(TARGET_WINS ~ TEAM_BATTING_H + TEAM_BATTING_BB - (TEAM_PITCHING_H + TEAM_PITCHING_BB), data=train_1) # model with four variables considered
 
 cook <- cooks.distance(m)
 
@@ -114,32 +124,41 @@ abline(h = 4*mean(cook, na.rm=T), col="red") # add cutoff line, which is equival
 text(x=1:length(cook)+1, y=cook, labels=ifelse(cook>4*mean(cook, na.rm=T),names(cook),""), col="red") # add labels for points (rows)
 ```
 
-We can see the full view of the influential numbers by adding to a dataframe and viewing the head. We have 89 influential outliers. To take it one step further, we can find out what is the most influential outlier. 
+We can see the full view of the influential numbers by adding to a dataframe and viewing the head. We have 66 influential outliers. To take it one step further, we can find out what is the most influential outlier. 
 
 ```{r}
-influential <- as.numeric(names(cook)[(cook > 4*mean(cook, na.rm=T))]) # add influential rows to dataframe
+influential <- as.numeric(names(cook)[(cook > 4*mean(cook, na.rm=T))]) # add influential rows 
 
-head(train[influential, ]) # show rows that match influential numbers
+head(train_1[influential, ]) # show rows that match influential numbers
 ```
 
 The most influential outlier is at row 1828. In the next section we will have to account how to handle the 89 outliers, including row 1828.
 
 ```{r}
-car::outlierTest(m)
+outlierTest(m)
 ```
 
 ## Data Preparation
 
 ### Handling NA values
 
-The variables we are using: TEAM_BATTING_H, TEAM_BATTING_BB, TEAM_PITCHING_H, TEAM_PITCHING_BB luckily do not have any missing values. Should we decide to use additional variables, we will revisit this section. 
+We impute the missing NA values with the mean using the Hmisc package:
+
+```{r include=FALSE}
+train_1$TEAM_BATTING_SO<-impute(train_1$TEAM_BATTING_SO, median)
+train_1$TEAM_BASERUN_SB<-impute(train_1$TEAM_BASERUN_SB, median)
+train_1$TEAM_PITCHING_SO<-impute(train_1$TEAM_PITCHING_SO, median)
+train_1$TEAM_FIELDING_DP<-impute(train_1$TEAM_FIELDING_DP, median)
+```
+
 
 ### Handling Outliers
 
+We will have *TWO* train dataframes to compare which one performs better with our testing, one with outliers (train_1) and one with outliers removed (train_no):
 ```{r}
-
+#removed outliers
+train_no<-train_1[-influential, ]
 ```
-
 
 ### New variables
 
@@ -149,21 +168,29 @@ team batting on base = team batting base hits + team batting walks
 team pitching allows = team pitching hits allowed + team pitching walks allowed
 BASE_DIFF = team batting on base - team pitching allows
 
-Our thought is that the team that is on base more, will have a higher chance of winning and thus more wins. 
+Our thought is that the team that is on base more, will have a higher chance of winning.
 
 ```{r}
 
-train$TEAM_BATTING_OB <- train$TEAM_BATTING_H + train$TEAM_BATTING_BB # create variable team batting on base
+# with outliers
+train_1$TEAM_BATTING_OB <- train_1$TEAM_BATTING_H + train_1$TEAM_BATTING_BB # create variable team batting on base
+train_1$TEAM_PITCHING_A <- train_1$TEAM_PITCHING_H + train_1$TEAM_PITCHING_BB # create variable pitching allows
+train_1$BASE_DIFF <- train_1$TEAM_BATTING_OB - train_1$TEAM_PITCHING_A #create variable base diff
 
-train$TEAM_PITCHING_A <- train$TEAM_PITCHING_H + train$TEAM_PITCHING_BB # create variable pitching allows
-
-train$BASE_DIFF<- train$TEAM_BATTING_OB - train$TEAM_PITCHING_A #create variable base diff
-  
+# without outliers
+train_no$TEAM_BATTING_OB <- train_no$TEAM_BATTING_H + train_no$TEAM_BATTING_BB # create variable team batting on base
+train_no$TEAM_PITCHING_A <- train_no$TEAM_PITCHING_H + train_no$TEAM_PITCHING_BB # create variable pitching allows
+train_no$BASE_DIFF <- train_no$TEAM_BATTING_OB - train_no$TEAM_PITCHING_A # create variable base diff
 ```
 
 
 ```{r}
-plot(train$BASE_DIFF, train$TARGET_WINS, xlab = "Homeruns", ylab = "Wins", title("Wins vs. homeruns"))
+
+par(mfrow = c(1,2)) #view graphs in 2x2 view
+plot(train_1$BASE_DIFF,train_1$TARGET_WINS, xlab = "On plate difference", ylab = "Wins", title("Wins vs. On plate  difference"))
+
+plot(train_no$BASE_DIFF,train_no$TARGET_WINS, xlab = "On plate difference", ylab = "Wins", title("Wins vs. On plate  difference"))
+
 ```
 
 ## Build Models
