@@ -38,10 +38,10 @@ We now will split the training data set into two sets: train_1 and test_1. The t
 ```{r}
 set.seed(123)   #  set seed to ensure you always have same random numbers generated
 sample <- sample.split(data,SplitRatio = 0.80) 
-train_1 <- subset(data, sample ==TRUE) 
-test_1 <- subset(data, sample==FALSE)
+train_1 <- subset(data, sample == TRUE) 
+test_1 <- subset(data, sample == FALSE)
 
-dim(train_1)
+dim(train_1) # view the dimensions
 dim(test_1)
 ```
 
@@ -132,7 +132,7 @@ influential <- as.numeric(names(cook)[(cook > 4*mean(cook, na.rm=T))]) # add inf
 head(train_1[influential, ]) # show rows that match influential numbers
 ```
 
-The most influential outlier is at row 1828. In the next section we will have to account how to handle the 89 outliers, including row 1828.
+The most influential outlier is at row 1828. In the next section we will have to account how to handle the 66 outliers, including row 1828.
 
 ```{r}
 outlierTest(m)
@@ -187,9 +187,10 @@ train_no$BASE_DIFF <- train_no$TEAM_BATTING_OB - train_no$TEAM_PITCHING_A # crea
 ```{r}
 
 par(mfrow = c(1,2)) #view graphs in 2x2 view
-plot(train_1$BASE_DIFF,train_1$TARGET_WINS, xlab = "On plate difference", ylab = "Wins", title("Wins vs. On plate  difference"))
 
-plot(train_no$BASE_DIFF,train_no$TARGET_WINS, xlab = "On plate difference", ylab = "Wins", title("Wins vs. On plate  difference"))
+plot(train_1$BASE_DIFF,train_1$TARGET_WINS, xlab = "On plate difference", ylab = "Wins", title("Wins vs. On plate difference"))
+
+plot(train_no$BASE_DIFF,train_no$TARGET_WINS, xlab = "On plate difference", ylab = "Wins", title("Wins vs. On plate difference"))
 
 ```
 
@@ -214,8 +215,6 @@ summary(model_2)
 ```
 
 
-
-
 ```{r model_2_no}
 model_2_no = lm(TARGET_WINS ~ TEAM_BATTING_OB+ TEAM_FIELDING_E + TEAM_FIELDING_DP, data = train_no)
 
@@ -235,8 +234,6 @@ summary(model_3_no)
 ```
 
 
-
-
 ```{r model_4}
 model_4 = lm(TARGET_WINS ~ TEAM_BATTING_OB + TEAM_FIELDING_E +TEAM_BASERUN_SB, data = train_1)
 summary(model_4)
@@ -248,7 +245,6 @@ model_4_no = lm(TARGET_WINS ~ TEAM_BATTING_OB + TEAM_FIELDING_E +TEAM_BASERUN_SB
 summary(model_4_no)
 ```
 
-
 ## Select Models
 Since there it appears that models that exlude the outliers result with lowered R-squared and Adjusted R-squared values, all no models will be excluded from testing.
 
@@ -259,9 +255,8 @@ multicollinearity
 ##### a) RMSE
 ```{r mse calc}
 
-
 #remove same columns from train_1
-test_1 <- subset(test_1, select = -c(TEAM_BASERUN_CS,TEAM_BATTING_HBP))
+test_1 <- subset(test_1, select=-c(TEAM_BASERUN_CS,TEAM_BATTING_HBP))
 
 #missing values for test
 test_1$TEAM_BATTING_SO<-impute(test_1$TEAM_BATTING_SO, median)
@@ -283,12 +278,9 @@ as.matrix(c(mean((wins - predict.lm(model_1, newdata = test_1))^2),
             mean((wins - predict.lm(model_4, newdata = test_1))^2))
 )
 
-mse(test_1$TARGET_WINS, model_1_predict)
-
-
 ```
 
-model_1 had the best, followed by 2, then 5 and finally 3.
+model_1 had the best, followed by 2, then 4 and finally 3.
 
 
 
@@ -359,7 +351,6 @@ plot(model_4)
 ```
 
 
-
 Checking the residuals plots the models all appear to follow to the assumptions of linear regression. 
 
 multicollinearity
@@ -368,12 +359,10 @@ vif(model_1)
 vif(model_2)
 vif(model_3)
 vif(model_4)
-
 ```
 
 
-the VIF values suggest multicollinearity is not an issue, however it is more apparent in model_1 then in the other models.
-
+The VIF values suggest multicollinearity is not an issue, however it is more apparent in model_1 then in the other models.
 
 
 
@@ -395,9 +384,9 @@ eval$TEAM_PITCHING_A <- eval$TEAM_PITCHING_H + eval$TEAM_PITCHING_BB # create va
 eval$BASE_DIFF <- eval$TEAM_BATTING_OB - eval$TEAM_PITCHING_A
 
 
+predict_eval <- round(predict(model_4, eval),0) # predict values using eval set
 
-predict_eval = round(predict(model_4, eval),0)
-
+write.csv(predict_eval,'Predictions_Baseball.csv', row.names = FALSE) # write predicitions to csv file
 
 ```
 
