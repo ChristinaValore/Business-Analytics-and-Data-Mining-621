@@ -195,7 +195,212 @@ plot(train_no$BASE_DIFF,train_no$TARGET_WINS, xlab = "On plate difference", ylab
 
 ## Build Models
 
+```{r model_1}
+model_1 = lm(TARGET_WINS ~ TEAM_BATTING_OB + TEAM_BATTING_HR + TEAM_PITCHING_A + TEAM_FIELDING_E + TEAM_FIELDING_DP, data = train_1)
+
+summary(model_1)
+```
+
+```{r model_1_no}
+model_1_no = lm(TARGET_WINS ~ TEAM_BATTING_OB + TEAM_BATTING_HR + TEAM_PITCHING_A + TEAM_FIELDING_E + TEAM_FIELDING_DP, data = train_no)
+
+summary(model_1_no)
+```
+
+```{r model_2}
+model_2 = lm(TARGET_WINS ~ TEAM_BATTING_OB + TEAM_FIELDING_E + TEAM_FIELDING_DP, data = train_1)
+
+summary(model_2)
+```
+
+
+
+
+```{r model_2_no}
+model_2_no = lm(TARGET_WINS ~ TEAM_BATTING_OB+ TEAM_FIELDING_E + TEAM_FIELDING_DP, data = train_no)
+
+summary(model_2_no)
+```
+
+
+```{r model_3}
+model_3 = lm(TARGET_WINS ~ TEAM_BATTING_OB + TEAM_FIELDING_E, data = train_1)
+summary(model_3)
+```
+
+
+```{r model_3_no}
+model_3_no = lm(TARGET_WINS ~ TEAM_BATTING_OB + TEAM_FIELDING_E, data = train_no)
+summary(model_3_no)
+```
+
+
+
+
+```{r model_4}
+model_4 = lm(TARGET_WINS ~ TEAM_BATTING_OB + TEAM_FIELDING_E +TEAM_BASERUN_SB, data = train_1)
+summary(model_4)
+```
+
+
+```{r model_4_no}
+model_4_no = lm(TARGET_WINS ~ TEAM_BATTING_OB + TEAM_FIELDING_E +TEAM_BASERUN_SB, data = train_no)
+summary(model_4_no)
+```
+
+
 ## Select Models
+Since there it appears that models that exlude the outliers result with lowered R-squared and Adjusted R-squared values, all no models will be excluded from testing.
+
+
+multicollinearity
+
+
+##### a) RMSE
+```{r mse calc}
+
+
+#remove same columns from train_1
+test_1 <- subset(test_1, select = -c(TEAM_BASERUN_CS,TEAM_BATTING_HBP))
+
+#missing values for test
+test_1$TEAM_BATTING_SO<-impute(test_1$TEAM_BATTING_SO, median)
+test_1$TEAM_BASERUN_SB<-impute(test_1$TEAM_BASERUN_SB, median)
+test_1$TEAM_PITCHING_SO<-impute(test_1$TEAM_PITCHING_SO, median)
+test_1$TEAM_FIELDING_DP<-impute(test_1$TEAM_FIELDING_DP, median)
+
+
+#add for test_1 
+test_1$TEAM_BATTING_OB <- test_1$TEAM_BATTING_H + test_1$TEAM_BATTING_BB # create variable team batting on base
+test_1$TEAM_PITCHING_A <- test_1$TEAM_PITCHING_H + test_1$TEAM_PITCHING_BB # create variable pitching allows
+test_1$BASE_DIFF <- test_1$TEAM_BATTING_OB - test_1$TEAM_PITCHING_A
+
+wins = test_1$TARGET_WINS
+
+as.matrix(c(mean((wins - predict.lm(model_1, newdata = test_1))^2),
+            mean((wins - predict.lm(model_2, newdata = test_1))^2),
+            mean((wins - predict.lm(model_3, newdata = test_1))^2),
+            mean((wins - predict.lm(model_4, newdata = test_1))^2))
+)
+
+mse(test_1$TARGET_WINS, model_1_predict)
+
+
+```
+
+model_1 had the best, followed by 2, then 5 and finally 3.
+
+
+
+##### b) R-squared
+
+
+model_1
+issues with model_1 inlcude the double-play variable which suggests good defense but the model suggests more losses - contradicting. There's also 2 estimators that are not significat.
+
+model_2
+slightly lowers r-squared, but all variables are now significant. However same issue with model_1 - contradicting value for double-play
+
+model_3
+r-squared is definitely lower then before, but the estimators are accurate with their outcomes for the team - i.e more errors = lose more and more on-base opportunities = win more.
+
+model_4
+r-squared improved with addition of stolen-bases. all values are significant and suggest correct outcome for team.
+
+Conclusion: although model_4 does not have the highest r-squared value, it does have all of its predictors with significant p-values and correct positive/negative values based on their effect to the team.
+
+
+
+
+##### c) F-statistic
+```{r}
+summary(model_1)
+summary(model_2)
+summary(model_3)
+summary(model_4)
+```
+
+
+The F-statistic on all models have significant p-values, suggesting the group of variables are jointly significant.
+
+
+##### d) residual plots
+
+```{r}
+plot(model_1)
+```
+
+
+```{r}
+plot(model_2)
+#residuals vs fitted suggests constant variance
+#in normqq plot there appears to be some skewness at the right end
+#scale-location shows homoscedasticity 
+#residuals vs leverage shows influential points
+```
+
+
+```{r}
+plot(model_3)
+#residuals vs fitted suggests constant variance
+#in normqq plot there appears to be some skewness at the right end
+#scale-location shows homoscedasticity 
+#residuals vs leverage shows influential points
+```
+
+
+
+```{r}
+plot(model_4)
+#residuals vs fitted suggests constant variance
+#in normqq plot there appears to be some skewness at the right end
+#scale-location shows homoscedasticity 
+#residuals vs leverage shows influential points
+```
+
+
+
+Checking the residuals plots the models all appear to follow to the assumptions of linear regression. 
+
+multicollinearity
+```{r}
+vif(model_1)
+vif(model_2)
+vif(model_3)
+vif(model_4)
+
+```
+
+
+the VIF values suggest multicollinearity is not an issue, however it is more apparent in model_1 then in the other models.
+
+
+
+
+##### Make predictions using the evaluation data set
+```{r}
+#remove same columns from train_1
+eval <- subset(eval, select = -c(TEAM_BASERUN_CS,TEAM_BATTING_HBP))
+
+#missing values for test
+eval$TEAM_BATTING_SO<-impute(eval$TEAM_BATTING_SO, median)
+eval$TEAM_BASERUN_SB<-impute(eval$TEAM_BASERUN_SB, median)
+eval$TEAM_PITCHING_SO<-impute(eval$TEAM_PITCHING_SO, median)
+eval$TEAM_FIELDING_DP<-impute(eval$TEAM_FIELDING_DP, median)
+
+
+#add for test_1 
+eval$TEAM_BATTING_OB <- eval$TEAM_BATTING_H + eval$TEAM_BATTING_BB # create variable team batting on base
+eval$TEAM_PITCHING_A <- eval$TEAM_PITCHING_H + eval$TEAM_PITCHING_BB # create variable pitching allows
+eval$BASE_DIFF <- eval$TEAM_BATTING_OB - eval$TEAM_PITCHING_A
+
+
+
+predict_eval = round(predict(model_4, eval),0)
+
+
+```
+
 
 Sources: 
 
