@@ -1,6 +1,6 @@
 ---
 title: 'Assignment 1: Data 621'
-author: "Critical Thinking Group 5 - Christina Valore, Henry Vasquez, Chunhui Zhu, Chunmei Zhu"
+author: "Critical Thinking Group 5 - Christina Valore, Henry Vasquez, Chunhui Zhu, Chunmei Zhu, Yuen Chun Wong"
 date: "9/16/2019"
 output: html_document
 ---
@@ -24,8 +24,8 @@ First, we import data from our GitHub repo, then we remove any unnecessary colum
 
 ```{r }
 # import data
-data <-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/moneyball-training-data.csv") 
-eval <-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/moneyball-evaluation-data.csv") 
+data <-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/Homework1/moneyball-training-data.csv") 
+eval <-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/Homework1/moneyball-evaluation-data.csv") 
 
 data <- select(data,-1) # remove index column, which is first column in both datasets
 eval <- select(eval,-1)
@@ -94,7 +94,7 @@ plot(TARGET_WINS ~ TEAM_PITCHING_BB,train_1) # pitching walks allowed
 
 ```
 
-Batting_H and Batting_BB look to be the most normally distributed, where pitching_H and pitching_BB seem to be more concetrated to the left again indicating there may not be a linear relationship to target wins. 
+Batting_H and Batting_BB look to be the most normally distributed, where pitching_H and pitching_BB seem to be more concentrated to the left again indicating there may not be a linear relationship to target wins. 
 
 ```{r}
 
@@ -190,7 +190,7 @@ par(mfrow = c(1,2)) #view graphs in 2x2 view
 
 plot(train_1$BASE_DIFF,train_1$TARGET_WINS, xlab = "On plate difference", ylab = "Wins", title("Wins vs. On plate difference"))
 
-plot(train_no$BASE_DIFF,train_no$TARGET_WINS, xlab = "On plate difference", ylab = "Wins", title("Wins vs. On plate difference"))
+plot(train_no$BASE_DIFF,train_no$TARGET_WINS, xlab = "On plate difference", ylab = "Wins", title("Wins vs. On plate difference (no)"))
 
 ```
 
@@ -246,7 +246,7 @@ summary(model_4_no)
 ```
 
 ## Select Models
-Since there it appears that models that exlude the outliers result with lowered R-squared and Adjusted R-squared values, all no models will be excluded from testing.
+Since there it appears that models that exclude the outliers result with lowered R-squared and Adjusted R-squared values, all no models will be excluded from testing.
 
 
 multicollinearity
@@ -319,11 +319,13 @@ The F-statistic on all models have significant p-values, suggesting the group of
 ##### d) residual plots
 
 ```{r}
+par(mfrow = c(2,2))
 plot(model_1)
 ```
 
 
 ```{r}
+par(mfrow = c(2,2))
 plot(model_2)
 #residuals vs fitted suggests constant variance
 #in normqq plot there appears to be some skewness at the right end
@@ -333,6 +335,7 @@ plot(model_2)
 
 
 ```{r}
+par(mfrow = c(2,2))
 plot(model_3)
 #residuals vs fitted suggests constant variance
 #in normqq plot there appears to be some skewness at the right end
@@ -343,6 +346,7 @@ plot(model_3)
 
 
 ```{r}
+par(mfrow = c(2,2))
 plot(model_4)
 #residuals vs fitted suggests constant variance
 #in normqq plot there appears to be some skewness at the right end
