@@ -1,0 +1,141 @@
+---
+title: "Data621-Classification HW2"
+author: "Chunhui Zhu"
+date: "9/16/2019"
+output: html_document
+---
+
+## 1. Download the classification output data set (attached in Blackboard to the assignment).
+
+
+```{r}
+data<- read.csv(file="classification-output-data.csv", header=TRUE, sep=",")
+print(head(data))
+```
+
+## 2. The data set has three key columns we will use:
+###  class: the actual class for the observation
+###  scored.class: the predicted class for the observation (based on a threshold of 0.5)
+###  scored.probability: the predicted probability of success for the observation
+
+## Q: Use the table() function to get the raw confusion matrix for this scored dataset. Make sure you understand the output. In particular, do the rows represent the actual or predicted class? The columns?
+
+
+```{r}
+confusion_table<-table(data$class,data$scored.class)
+confusion_table
+```
+
+
+## 3. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the accuracy of the predictions.
+
+Accurary = (TP + TN) / (TP + FP +TN +FN)
+
+```{r}
+confusion_table<-c()
+==
+```
+
+
+```{r}
+Accurary = (119+27)/(119+5+30+27)
+Accurary
+```
+
+
+
+## 4. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the classification error rate of the predictions.Verify that you get an accuracy and an error rate that sums to one.
+
+Classification Error Rate = ( FP + FN )/ (RP + FR + TN + FN)
+
+```{r}
+ErrorRate = (30+5) / (119+5+30+27)
+ErrorRate
+```
+
+
+
+## 5. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the precision of the predictions.
+
+Precision = TP / (TP + FP)
+
+```{r}
+Precision = 119 / (119+27)
+Precision
+
+```
+
+
+## 6. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the sensitivity of the predictions. Sensitivity is also known as recall.
+
+Sensitivity = TP / (TP + FN)
+
+```{r}
+Sensitivity = 119 / (119+5)
+Sensitivity
+```
+
+
+## 7. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the specificity of the predictions.
+
+Specificity = TN / (TN+FP)
+
+```{r}
+Specificity = 30 / (30 + 5)
+Specificity
+```
+
+
+## 8. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the F1 score of the predictions.
+
+F1 Score = 2 * Precision * Sensitivity / (Precision + Sensitivity) 
+
+```{r}
+F1_Score = 2 * Precision * Sensitivity / (Precision + Sensitivity) 
+F1_Score
+```
+
+
+## 9. Before we move on, let’s consider a question that was asked: What are the bounds on the F1 score? Show that the F1 score will always be between 0 and 1. (Hint: If 0 < 𝑎 < 1 and 0 < 𝑏 < 1 then 𝑎𝑏 < 𝑎.)
+
+
+```{r}
+
+```
+
+
+## 10. Write a function that generates an ROC curve from a data set with a true classification column (class in our example) and a probability column (scored.probability in our example). Your function should return a list that includes the plot of the ROC curve and a vector that contains the calculated area under the curve (AUC). Note that I recommend using a sequence of thresholds ranging from 0 to 1 at 0.01 intervals.
+
+
+```{r}
+plot(data$class,data$scored.probability)
+```
+
+
+## 11. Use your created R functions and the provided classification output data set to produce all of the classification metrics discussed above.
+
+
+```{r}
+
+```
+
+
+## 12. Investigate the caret package. In particular, consider the functions confusionMatrix, sensitivity, and specificity. Apply the functions to the data set. How do the results compare with your own functions?
+
+
+```{r}
+
+```
+
+
+## 13. Investigate the pROC package. Use it to generate an ROC curve for the data set. How do the results compare with your own functions?
+
+
+```{r}
+
+```
+
+
+
+
+
