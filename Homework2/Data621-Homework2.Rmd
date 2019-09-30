@@ -1,0 +1,261 @@
+---
+title: "Data 621 Homework 2"
+author: "Group 5"
+always_allow_html: yes
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(kableExtra)
+```
+
+## 1. Download the classification output data set (attached in Blackboard to the assignment).
+
+
+```{r}
+data<- read.csv("https://raw.githubusercontent.com/hvasquez81/DATA621/master/classification-output-data.csv")
+head(data) %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, position = "center", font_size = 9)
+```
+
+## 2. The data set has three key columns we will use:
+
+class: the actual class for the observation
+
+scored.class: the predicted class for the observation (based on a threshold of 0.5)
+
+scored.probability: the predicted probability of success for the observation
+
+Q: Use the table() function to get the raw confusion matrix for this scored dataset. Make sure you understand the output. In particular, do the rows represent the actual or predicted class? The columns?
+
+
+```{r raw confusion matrix}
+#row: predicted value; columns: actual value
+conf_matrix = table(data$scored.class, data$class)
+colnames(conf_matrix) = c("Not True", "True")
+rownames(conf_matrix) = c("Predicated Not True", "predicited True")
+conf_matrix %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, position = "center", font_size = 9)
+
+  TN = conf_matrix[1,1]
+  TP = conf_matrix[2,2]
+  FN = conf_matrix[1,2]
+  FP = conf_matrix[2,1]
+```
+
+
+## 3. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the accuracy of the predictions.
+
+
+```{r accuracy}
+accuracy = function(data, predicted_col_name, actual_col_name) {
+  
+  conf = table(data[ , predicted_col_name], data[ , actual_col_name])
+  TN = conf[1,1]
+  TP = conf[2,2]
+  FN = conf[1,2]
+  FP = conf[2,1]
+  
+  #Accurary = (TP + TN) / (TP + FP +TN +FN)
+  return(round((TP+TN)/(TP + FP + TN + FN), 4))
+  
+}
+
+print(paste0("Accuracy: ", accuracy(data, 'scored.class', 'class')))
+```
+
+
+
+
+
+## 4. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the classification error rate of the predictions. Verify that you get an accuracy and an error rate that sums to one.
+
+Classification Error Rate = ( FP + FN )/(TP + FP +TN +FN)
+
+```{r errorRate}
+errorRate = function(data, predicted_col_name, actual_col_name) {
+  
+  conf = table(data[ , predicted_col_name], data[ , actual_col_name])
+  TN = conf[1,1]
+  TP = conf[2,2]
+  FN = conf[1,2]
+  FP = conf[2,1]
+  
+  #Classification Error Rate = ( FP + FN )/(TP + FP +TN +FN)
+  return(round((FP+FN)/(TP + FP + TN + FN), 4))
+  
+}
+
+print(paste0("Error rate: ", errorRate(data, 'scored.class', 'class')))
+
+#accuracy + error rate
+print(paste0("Accuracy + Error rate = ", accuracy(data, 'scored.class', 'class'), " + ", errorRate(data, 'scored.class', 'class'), " = ", (accuracy(data, 'scored.class', 'class') + errorRate(data, 'scored.class', 'class'))))
+```
+
+
+
+## 5. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the precision of the predictions.
+
+Precision = TP / (TP + FP)
+
+```{r precision}
+precision = function(data, predicted_col_name, actual_col_name) {
+  
+  conf = table(data[ , predicted_col_name], data[ , actual_col_name])
+  TN = conf[1,1]
+  TP = conf[2,2]
+  FN = conf[1,2]
+  FP = conf[2,1]
+  
+  #Precision = TP / (TP + FP)
+  return(round((TP)/(TP + FP), 4))
+  
+}
+
+print(paste0("Precision: ", precision(data, 'scored.class', 'class')))
+```
+
+
+## 6. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the sensitivity of the predictions. Sensitivity is also known as recall.
+
+Sensitivity = TP / (TP + FN)
+
+```{r sensitivity}
+sensitivity = function(data, predicted_col_name, actual_col_name) {
+  
+  conf = table(data[ , predicted_col_name], data[ , actual_col_name])
+  TN = conf[1,1]
+  TP = conf[2,2]
+  FN = conf[1,2]
+  FP = conf[2,1]
+  
+  #Sensitivity = TP / (TP + FN)
+  return(round((TP)/(TP + FN), 4))
+  
+}
+
+print(paste0("Sensitivity: ", sensitivity(data, 'scored.class', 'class')))
+```
+
+
+## 7. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the specificity of the predictions.
+
+Specificity = TN / (TN+FP)
+
+```{r specificity}
+specificity = function(data, predicted_col_name, actual_col_name) {
+  
+  conf = table(data[ , predicted_col_name], data[ , actual_col_name])
+  TN = conf[1,1]
+  TP = conf[2,2]
+  FN = conf[1,2]
+  FP = conf[2,1]
+  
+  #Specificity = TN / (TN+FP)
+  return(round((TN)/(TN + FP), 4))
+  
+}
+
+print(paste0("Specificity: ", specificity(data, 'scored.class', 'class')))
+```
+
+
+## 8. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the F1 score of the predictions.
+
+F1 Score = 2 * Precision * Sensitivity / (Precision + Sensitivity) 
+
+```{r f1 score}
+f1_score = function(data, predicted_col_name, actual_col_name) {
+
+  Precision = precision(data, predicted_col_name, actual_col_name)
+  Sensitivity = sensitivity(data, predicted_col_name, actual_col_name)
+  
+  #F1 Score = 2 * Precision * Sensitivity / (Precision + Sensitivity) 
+  return(round((2*Precision*Sensitivity)/(Precision + Sensitivity), 4))
+  
+}
+
+print(paste0("F1 score: ", f1_score(data, 'scored.class', 'class')))
+```
+
+
+## 9. Before we move on, let’s consider a question that was asked: What are the bounds on the F1 score? Show that the F1 score will always be between 0 and 1. (Hint: If 0 < 𝑎 < 1 and 0 < 𝑏 < 1 then 𝑎𝑏 < 𝑎.)
+
+
+
+
+#F1 Score = 2 * Precision * Sensitivity / (Precision + Sensitivity) 
+
+
+
+```
+F1 score considers both precision and sensitivity. The bounds on the F1 score is always between 0 and 1 since all varibales are non negative, and 2TP <= (2TP+FN+FP).
+```
+
+## 10. Write a function that generates an ROC curve from a data set with a true classification column (class in our example) and a probability column (scored.probability in our example). Your function should return a list that includes the plot of the ROC curve and a vector that contains the calculated area under the curve (AUC). Note that I recommend using a sequence of thresholds ranging from 0 to 1 at 0.01 intervals.
+
+Steps:
+1. sort scored.probability in adsenden order, so that class 0 has more located at the lower probability, and class 1 has more located higher probability. However, there are some class 0 and class 1 at the middle rang of probability, that we can not able to classify them.
+
+2. use glm model to predicte class, and set family = binomial, get the preditived value.
+
+```{r}
+
+```
+
+
+
+From the TPP, the True positive Percentage, is 100 because all of the class samples were correctly classified. For FPP, the False positive Percentage, is 100 because all of not class samples were incorrectly classified. Therefore, the right upper coner of ROC curve reaches to 100%.
+
+
+
+```{r}
+
+```
+
+
+```
+The tpp and fpp are both 0 because non of the samples were classified, either correctly or incorrectly, class.
+```
+
+
+## 11. Use your created R functions and the provided classification output data set to produce all of the classification metrics discussed above.
+
+
+```{r}
+
+```
+
+
+
+
+## 12. Investigate the caret package. In particular, consider the functions confusionMatrix, sensitivity, and specificity. Apply the functions to the data set. How do the results compare with your own functions?
+
+The confusionMatrix function from caret libaray has same outcome as my own functions. 
+
+```{r}
+
+```
+
+
+
+## 13. Investigate the pROC package. Use it to generate an ROC curve for the data set. How do the results compare with your own functions?
+
+area under the curve (AUC) the area enclosed between the curve of a probability with nonnegative values and the axis of the quality being measured; of the total area under a curve, the proportion that falls between two given points on the curve defines a probability density function.
+
+The glm predictive value has AUC = 85.03% which is same as the existed scored.probaility.Therefore, both result is similar. 
+
+
+```{r}
+
+```
+
+
+
+
+
