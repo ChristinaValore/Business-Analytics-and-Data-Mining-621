@@ -14,6 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyr)
 library(dplyr)
 library(kableExtra)
+library(pROC)
+library(caret)
 ```
 
 ## 1. Download the classification output data set (attached in Blackboard to the assignment).
@@ -37,15 +39,9 @@ Q: Use the table() function to get the raw confusion matrix for this scored data
 
 ```{r raw confusion matrix}
 #row: predicted value; columns: actual value
-conf_matrix = table(data$scored.class, data$class)
-colnames(conf_matrix) = c("Not True", "True")
-rownames(conf_matrix) = c("Predicated Not True", "predicited True")
+conf_matrix = table(Prediction = data$scored.class, Actual = data$class)
 conf_matrix %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, position = "center", font_size = 9)
 
-  TN = conf_matrix[1,1]
-  TP = conf_matrix[2,2]
-  FN = conf_matrix[1,2]
-  FP = conf_matrix[2,1]
 ```
 
 
@@ -56,10 +52,10 @@ conf_matrix %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hove
 accuracy = function(data, predicted_col_name, actual_col_name) {
   
   conf = table(data[ , predicted_col_name], data[ , actual_col_name])
-  TN = conf[1,1]
-  TP = conf[2,2]
-  FN = conf[1,2]
-  FP = conf[2,1]
+  TP = conf[1,1]
+  TN = conf[2,2]
+  FP = conf[1,2]
+  FN = conf[2,1]
   
   #Accurary = (TP + TN) / (TP + FP +TN +FN)
   return(round((TP+TN)/(TP + FP + TN + FN), 4))
@@ -81,10 +77,10 @@ Classification Error Rate = ( FP + FN )/(TP + FP +TN +FN)
 errorRate = function(data, predicted_col_name, actual_col_name) {
   
   conf = table(data[ , predicted_col_name], data[ , actual_col_name])
-  TN = conf[1,1]
-  TP = conf[2,2]
-  FN = conf[1,2]
-  FP = conf[2,1]
+  TP = conf[1,1]
+  TN = conf[2,2]
+  FP = conf[1,2]
+  FN = conf[2,1]
   
   #Classification Error Rate = ( FP + FN )/(TP + FP +TN +FN)
   return(round((FP+FN)/(TP + FP + TN + FN), 4))
@@ -107,10 +103,10 @@ Precision = TP / (TP + FP)
 precision = function(data, predicted_col_name, actual_col_name) {
   
   conf = table(data[ , predicted_col_name], data[ , actual_col_name])
-  TN = conf[1,1]
-  TP = conf[2,2]
-  FN = conf[1,2]
-  FP = conf[2,1]
+  TP = conf[1,1]
+  TN = conf[2,2]
+  FP = conf[1,2]
+  FN = conf[2,1]
   
   #Precision = TP / (TP + FP)
   return(round((TP)/(TP + FP), 4))
@@ -129,10 +125,10 @@ Sensitivity = TP / (TP + FN)
 sensitivity = function(data, predicted_col_name, actual_col_name) {
   
   conf = table(data[ , predicted_col_name], data[ , actual_col_name])
-  TN = conf[1,1]
-  TP = conf[2,2]
-  FN = conf[1,2]
-  FP = conf[2,1]
+  TP = conf[1,1]
+  TN = conf[2,2]
+  FP = conf[1,2]
+  FN = conf[2,1]
   
   #Sensitivity = TP / (TP + FN)
   return(round((TP)/(TP + FN), 4))
@@ -151,10 +147,10 @@ Specificity = TN / (TN+FP)
 specificity = function(data, predicted_col_name, actual_col_name) {
   
   conf = table(data[ , predicted_col_name], data[ , actual_col_name])
-  TN = conf[1,1]
-  TP = conf[2,2]
-  FN = conf[1,2]
-  FP = conf[2,1]
+  TP = conf[1,1]
+  TN = conf[2,2]
+  FP = conf[1,2]
+  FN = conf[2,1]
   
   #Specificity = TN / (TN+FP)
   return(round((TN)/(TN + FP), 4))
@@ -199,35 +195,47 @@ F1 score considers both precision and sensitivity. The bounds on the F1 score is
 
 ## 10. Write a function that generates an ROC curve from a data set with a true classification column (class in our example) and a probability column (scored.probability in our example). Your function should return a list that includes the plot of the ROC curve and a vector that contains the calculated area under the curve (AUC). Note that I recommend using a sequence of thresholds ranging from 0 to 1 at 0.01 intervals.
 
-Steps:
-1. sort scored.probability in adsenden order, so that class 0 has more located at the lower probability, and class 1 has more located higher probability. However, there are some class 0 and class 1 at the middle rang of probability, that we can not able to classify them.
-
-2. use glm model to predicte class, and set family = binomial, get the preditived value.
-
-```{r}
-
-```
-
-
-
-From the TPP, the True positive Percentage, is 100 because all of the class samples were correctly classified. For FPP, the False positive Percentage, is 100 because all of not class samples were incorrectly classified. Therefore, the right upper coner of ROC curve reaches to 100%.
-
 
 
 ```{r}
 
+roc_curve = function(data, trueClass, probabilityColumn) {
+  
+  #create roc calculations
+  
+  #create roc curve using ggplot
+  
+  #save roc curve to a variable
+  
+  #calculate auc and save to variable
+  
+  #attach ggplot roc curve and auc value to a list
+  
+  #return list
+  
+  
+}
+
 ```
 
 
-```
-The tpp and fpp are both 0 because non of the samples were classified, either correctly or incorrectly, class.
-```
+
+
+
+    
 
 
 ## 11. Use your created R functions and the provided classification output data set to produce all of the classification metrics discussed above.
 
 
 ```{r}
+print(paste0("Accuracy: ", accuracy(data, 'scored.class', 'class')))
+print(paste0("Error rate: ", errorRate(data, 'scored.class', 'class')))
+print(paste0("Accuracy + Error rate = ", accuracy(data, 'scored.class', 'class'), " + ", errorRate(data, 'scored.class', 'class'), " = ", (accuracy(data, 'scored.class', 'class') + errorRate(data, 'scored.class', 'class'))))
+print(paste0("Precision: ", precision(data, 'scored.class', 'class')))
+print(paste0("Sensitivity: ", sensitivity(data, 'scored.class', 'class')))
+print(paste0("Specificity: ", specificity(data, 'scored.class', 'class')))
+print(paste0("F1 score: ", f1_score(data, 'scored.class', 'class')))
 
 ```
 
@@ -236,23 +244,23 @@ The tpp and fpp are both 0 because non of the samples were classified, either co
 
 ## 12. Investigate the caret package. In particular, consider the functions confusionMatrix, sensitivity, and specificity. Apply the functions to the data set. How do the results compare with your own functions?
 
-The confusionMatrix function from caret libaray has same outcome as my own functions. 
 
 ```{r}
 
+confusionMatrix(reference = as.factor(data$class), as.factor(data$scored.class))
+caret::sensitivity(reference = as.factor(data$class), as.factor(data$scored.class))
+caret::specificity(reference = as.factor(data$class), as.factor(data$scored.class))
 ```
-
+The results are the same as the functions created above.
 
 
 ## 13. Investigate the pROC package. Use it to generate an ROC curve for the data set. How do the results compare with your own functions?
 
-area under the curve (AUC) the area enclosed between the curve of a probability with nonnegative values and the axis of the quality being measured; of the total area under a curve, the proportion that falls between two given points on the curve defines a probability density function.
-
-The glm predictive value has AUC = 85.03% which is same as the existed scored.probaility.Therefore, both result is similar. 
 
 
 ```{r}
-
+library(pROC)
+roc(data$class, data$scored.probability, plot = TRUE)
 ```
 
 
