@@ -52,10 +52,10 @@ conf_matrix %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hove
 accuracy = function(data, predicted_col_name, actual_col_name) {
   
   conf = table(data[ , predicted_col_name], data[ , actual_col_name])
-  TP = conf[1,1]
-  TN = conf[2,2]
-  FP = conf[1,2]
-  FN = conf[2,1]
+  TP = conf[2,2]
+  TN = conf[1,1]
+  FP = conf[2,1]
+  FN = conf[1,2]
   
   #Accurary = (TP + TN) / (TP + FP +TN +FN)
   return(round((TP+TN)/(TP + FP + TN + FN), 4))
@@ -77,10 +77,10 @@ Classification Error Rate = ( FP + FN )/(TP + FP +TN +FN)
 errorRate = function(data, predicted_col_name, actual_col_name) {
   
   conf = table(data[ , predicted_col_name], data[ , actual_col_name])
-  TP = conf[1,1]
-  TN = conf[2,2]
-  FP = conf[1,2]
-  FN = conf[2,1]
+  TP = conf[2,2]
+  TN = conf[1,1]
+  FP = conf[2,1]
+  FN = conf[1,2]
   
   #Classification Error Rate = ( FP + FN )/(TP + FP +TN +FN)
   return(round((FP+FN)/(TP + FP + TN + FN), 4))
@@ -103,10 +103,10 @@ Precision = TP / (TP + FP)
 precision = function(data, predicted_col_name, actual_col_name) {
   
   conf = table(data[ , predicted_col_name], data[ , actual_col_name])
-  TP = conf[1,1]
-  TN = conf[2,2]
-  FP = conf[1,2]
-  FN = conf[2,1]
+  TP = conf[2,2]
+  TN = conf[1,1]
+  FP = conf[2,1]
+  FN = conf[1,2]
   
   #Precision = TP / (TP + FP)
   return(round((TP)/(TP + FP), 4))
@@ -125,10 +125,10 @@ Sensitivity = TP / (TP + FN)
 sensitivity = function(data, predicted_col_name, actual_col_name) {
   
   conf = table(data[ , predicted_col_name], data[ , actual_col_name])
-  TP = conf[1,1]
-  TN = conf[2,2]
-  FP = conf[1,2]
-  FN = conf[2,1]
+  TP = conf[2,2]
+  TN = conf[1,1]
+  FP = conf[2,1]
+  FN = conf[1,2]
   
   #Sensitivity = TP / (TP + FN)
   return(round((TP)/(TP + FN), 4))
@@ -147,10 +147,10 @@ Specificity = TN / (TN+FP)
 specificity = function(data, predicted_col_name, actual_col_name) {
   
   conf = table(data[ , predicted_col_name], data[ , actual_col_name])
-  TP = conf[1,1]
-  TN = conf[2,2]
-  FP = conf[1,2]
-  FN = conf[2,1]
+  TP = conf[2,2]
+  TN = conf[1,1]
+  FP = conf[2,1]
+  FN = conf[1,2]
   
   #Specificity = TN / (TN+FP)
   return(round((TN)/(TN + FP), 4))
@@ -197,7 +197,7 @@ F1 score considers both precision and sensitivity. The bounds on the F1 score is
 
 
 
-```{r}
+```{r self created roc curve}
 
 roc_curve = function(data, trueClass, probabilityColumn) {
   
@@ -209,7 +209,7 @@ roc_curve = function(data, trueClass, probabilityColumn) {
   
   #calculate auc and save to variable
   
-  #attach ggplot roc curve and auc value to a list
+  #attach ggplot roc curve amd auc value to a list
   
   #return list
   
@@ -228,7 +228,7 @@ roc_curve = function(data, trueClass, probabilityColumn) {
 ## 11. Use your created R functions and the provided classification output data set to produce all of the classification metrics discussed above.
 
 
-```{r}
+```{r created functions}
 print(paste0("Accuracy: ", accuracy(data, 'scored.class', 'class')))
 print(paste0("Error rate: ", errorRate(data, 'scored.class', 'class')))
 print(paste0("Accuracy + Error rate = ", accuracy(data, 'scored.class', 'class'), " + ", errorRate(data, 'scored.class', 'class'), " = ", (accuracy(data, 'scored.class', 'class') + errorRate(data, 'scored.class', 'class'))))
@@ -245,21 +245,22 @@ print(paste0("F1 score: ", f1_score(data, 'scored.class', 'class')))
 ## 12. Investigate the caret package. In particular, consider the functions confusionMatrix, sensitivity, and specificity. Apply the functions to the data set. How do the results compare with your own functions?
 
 
-```{r}
+```{r caret functions}
+confusionMatrix(conf_matrix, positive = '1')
+caret::sensitivity(conf_matrix, positive = '1')
+caret::specificity(conf_matrix, negative = '0')
 
-confusionMatrix(reference = as.factor(data$class), as.factor(data$scored.class))
-caret::sensitivity(reference = as.factor(data$class), as.factor(data$scored.class))
-caret::specificity(reference = as.factor(data$class), as.factor(data$scored.class))
 ```
-The results are the same as the functions created above.
+
+
+Comparing the results to the functions produced previously, all results are the same.
 
 
 ## 13. Investigate the pROC package. Use it to generate an ROC curve for the data set. How do the results compare with your own functions?
 
 
 
-```{r}
-library(pROC)
+```{r roc curve}
 roc(data$class, data$scored.probability, plot = TRUE)
 ```
 
