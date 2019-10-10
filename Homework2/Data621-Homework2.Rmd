@@ -1,29 +1,19 @@
 ---
-title: "Data 621 Homework 2"
-author: "Group 5"
+title: "Assignment 2: Data 621"
+author: "Critical Thinking Group 5 - Christina Valore, Henry Vasquez, Chunhui Zhu, Chunmei Zhu, Yuen Chun Wong"
 always_allow_html: yes
 
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r warning=FALSE}
+library(tidyr); library(dplyr); library(kableExtra); library(pROC); library(caret); library(ggplot2)
 ```
 
+## 1. Download the classification output data set (attached in Blackboard to the assignment).\
 
-```{r}
-library(tidyr)
-library(dplyr)
-library(kableExtra)
-library(pROC)
-library(caret)
-```
-
-## 1. Download the classification output data set (attached in Blackboard to the assignment).
-
-
-```{r}
+```{r data load}
 data<- read.csv("https://raw.githubusercontent.com/hvasquez81/DATA621/master/classification-output-data.csv")
-head(data) %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, position = "center", font_size = 9)
+head(data) %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, position = "center", font_size = 15)
 ```
 
 ## 2. The data set has three key columns we will use:
@@ -36,17 +26,13 @@ scored.probability: the predicted probability of success for the observation
 
 Q: Use the table() function to get the raw confusion matrix for this scored dataset. Make sure you understand the output. In particular, do the rows represent the actual or predicted class? The columns?
 
-
 ```{r raw confusion matrix}
 #row: predicted value; columns: actual value
 conf_matrix = table(Prediction = data$scored.class, Actual = data$class)
-conf_matrix %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, position = "center", font_size = 9)
-
+conf_matrix %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, position = "center", font_size = 15)
 ```
 
-
 ## 3. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the accuracy of the predictions.
-
 
 ```{r accuracy}
 accuracy = function(data, predicted_col_name, actual_col_name) {
@@ -59,15 +45,9 @@ accuracy = function(data, predicted_col_name, actual_col_name) {
   
   #Accurary = (TP + TN) / (TP + FP +TN +FN)
   return(round((TP+TN)/(TP + FP + TN + FN), 4))
-  
 }
-
 print(paste0("Accuracy: ", accuracy(data, 'scored.class', 'class')))
 ```
-
-
-
-
 
 ## 4. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the classification error rate of the predictions. Verify that you get an accuracy and an error rate that sums to one.
 
@@ -84,7 +64,6 @@ errorRate = function(data, predicted_col_name, actual_col_name) {
   
   #Classification Error Rate = ( FP + FN )/(TP + FP +TN +FN)
   return(round((FP+FN)/(TP + FP + TN + FN), 4))
-  
 }
 
 print(paste0("Error rate: ", errorRate(data, 'scored.class', 'class')))
@@ -92,8 +71,6 @@ print(paste0("Error rate: ", errorRate(data, 'scored.class', 'class')))
 #accuracy + error rate
 print(paste0("Accuracy + Error rate = ", accuracy(data, 'scored.class', 'class'), " + ", errorRate(data, 'scored.class', 'class'), " = ", (accuracy(data, 'scored.class', 'class') + errorRate(data, 'scored.class', 'class'))))
 ```
-
-
 
 ## 5. Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the precision of the predictions.
 
@@ -110,7 +87,6 @@ precision = function(data, predicted_col_name, actual_col_name) {
   
   #Precision = TP / (TP + FP)
   return(round((TP)/(TP + FP), 4))
-  
 }
 
 print(paste0("Precision: ", precision(data, 'scored.class', 'class')))
@@ -132,7 +108,6 @@ sensitivity = function(data, predicted_col_name, actual_col_name) {
   
   #Sensitivity = TP / (TP + FN)
   return(round((TP)/(TP + FN), 4))
-  
 }
 
 print(paste0("Sensitivity: ", sensitivity(data, 'scored.class', 'class')))
@@ -154,7 +129,6 @@ specificity = function(data, predicted_col_name, actual_col_name) {
   
   #Specificity = TN / (TN+FP)
   return(round((TN)/(TN + FP), 4))
-  
 }
 
 print(paste0("Specificity: ", specificity(data, 'scored.class', 'class')))
@@ -182,53 +156,76 @@ print(paste0("F1 score: ", f1_score(data, 'scored.class', 'class')))
 
 ## 9. Before we move on, let’s consider a question that was asked: What are the bounds on the F1 score? Show that the F1 score will always be between 0 and 1. (Hint: If 0 < 𝑎 < 1 and 0 < 𝑏 < 1 then 𝑎𝑏 < 𝑎.)
 
+Using the hint above, we say a = precision and b = sensitivity and both numbers are between 0 and 1. So if a = .5 and b =.5 then a*b = .25 and so a*b < a or a*b < b. To prove that the F1 score is always between 0 and 1, we can run a similation using the idea above, that the p and s values are also between 0 and 1.
 
+By generating random numbers and plugging them into the F1 score equation, we see that as we increase the amount of random numbers from 10 to 100 to 1000, we see that the max value gets close to 1 as the min value gets close 0 but never reaches either value. If we continue to generate more random numbers, we will see the max value continues to rise closer to 1, while the min closer to 0, however the max/min will never be equal to 1/0. Thus the F1 value will always be between 0 and 1
 
+```{r}
+# generate 10 random numbers for precision and recall between 0 and 1
+p1 <- runif(10, min = 0, max = 1)
+s1 <- runif(10, min = 0, max = 1)
+f1 <- 2*p1*s1/(p1+s1)
+summary(f1)
 
-#F1 Score = 2 * Precision * Sensitivity / (Precision + Sensitivity) 
+# generate 100 random numbers for precision and recall between 0 and 1
+p2 <- runif(100, min = 0, max = 1)
+s2 <- runif(100, min = 0, max = 1)
+f2 <- 2*p2*s2/(p2+s2)
+summary(f2)
 
-
-
-```
-F1 score considers both precision and sensitivity. The bounds on the F1 score is always between 0 and 1 since all varibales are non negative, and 2TP <= (2TP+FN+FP).
+# generate 1000 random numbers for precision and recall between 0 and 1
+p3 <- runif(1000, min = 0, max = 1)
+s3 <- runif(1000, min = 0, max = 1)
+f3 <- 2*p3*s3/(p3+s3)
+summary(f3)
 ```
 
 ## 10. Write a function that generates an ROC curve from a data set with a true classification column (class in our example) and a probability column (scored.probability in our example). Your function should return a list that includes the plot of the ROC curve and a vector that contains the calculated area under the curve (AUC). Note that I recommend using a sequence of thresholds ranging from 0 to 1 at 0.01 intervals.
 
+```{r roc curve, warning=TRUE}
 
+ROC <- function(x){
 
-```{r self created roc curve}
+  seq <- seq(0,1,0.01)
+  X_vec <- c()
+  Y_vec <- c()
+  
+  # calculating each AUC segment 
+  for (i in 1:length(seq)){
+    scored_class <- ifelse(x$scored.probability > seq[i], 1, 0)
+    df <- data.frame(scored.class = scored_class, class = x$class)
+    df_table <- with(df, table(scored.class, class))
+    X <- (df_table[4])/(df_table[4] + df_table[3])
+    Y <- (df_table[2]/(df_table[2] + df_table[1]))
+    
+    X_vec[i] <- X
+    Y_vec[i] <- Y
+  }
+  
+  XY <- data.frame(True= X_vec, False = Y_vec)
+  
+  plot <- ggplot(XY, aes(x=False, y=True))+ geom_point()+ geom_line(col="red") + geom_abline(intercept = 0, slope = 1) + labs(title="ROC", x = "False positive", y = "True positive")
+  
+  # remove NA VALUES
+  AUC_df <- XY[complete.cases(XY),]
 
-roc_curve = function(data, trueClass, probabilityColumn) {
+  # Calculate AUC
+  x <- abs(diff(AUC_df$False))
+  y <- AUC_df$True
+  AUC <- sum(x*y)
   
-  #create roc calculations
-  
-  #create roc curve using ggplot
-  
-  #save roc curve to a variable
-  
-  #calculate auc and save to variable
-  
-  #attach ggplot roc curve amd auc value to a list
-  
-  #return list
-  
-  
+  return(list(plot, AUC))
 }
+
+ROC_list <- ROC(data)
+ROC_list[[1]]
 
 ```
 
 
-
-
-
-    
-
-
 ## 11. Use your created R functions and the provided classification output data set to produce all of the classification metrics discussed above.
 
-
-```{r created functions}
+```{r}
 print(paste0("Accuracy: ", accuracy(data, 'scored.class', 'class')))
 print(paste0("Error rate: ", errorRate(data, 'scored.class', 'class')))
 print(paste0("Accuracy + Error rate = ", accuracy(data, 'scored.class', 'class'), " + ", errorRate(data, 'scored.class', 'class'), " = ", (accuracy(data, 'scored.class', 'class') + errorRate(data, 'scored.class', 'class'))))
@@ -236,10 +233,7 @@ print(paste0("Precision: ", precision(data, 'scored.class', 'class')))
 print(paste0("Sensitivity: ", sensitivity(data, 'scored.class', 'class')))
 print(paste0("Specificity: ", specificity(data, 'scored.class', 'class')))
 print(paste0("F1 score: ", f1_score(data, 'scored.class', 'class')))
-
 ```
-
-
 
 
 ## 12. Investigate the caret package. In particular, consider the functions confusionMatrix, sensitivity, and specificity. Apply the functions to the data set. How do the results compare with your own functions?
@@ -249,16 +243,12 @@ print(paste0("F1 score: ", f1_score(data, 'scored.class', 'class')))
 confusionMatrix(conf_matrix, positive = '1')
 caret::sensitivity(conf_matrix, positive = '1')
 caret::specificity(conf_matrix, negative = '0')
-
 ```
-
 
 Comparing the results to the functions produced previously, all results are the same.
 
 
 ## 13. Investigate the pROC package. Use it to generate an ROC curve for the data set. How do the results compare with your own functions?
-
-
 
 ```{r roc curve}
 roc(data$class, data$scored.probability, plot = TRUE)
