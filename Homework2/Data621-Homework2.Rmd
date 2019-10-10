@@ -26,7 +26,7 @@ scored.probability: the predicted probability of success for the observation
 
 Q: Use the table() function to get the raw confusion matrix for this scored dataset. Make sure you understand the output. In particular, do the rows represent the actual or predicted class? The columns?
 
-```{r raw confusion matrix}
+```{r confusion matrix}
 #row: predicted value; columns: actual value
 conf_matrix = table(Prediction = data$scored.class, Actual = data$class)
 conf_matrix %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, position = "center", font_size = 15)
@@ -182,7 +182,7 @@ summary(f3)
 
 ## 10. Write a function that generates an ROC curve from a data set with a true classification column (class in our example) and a probability column (scored.probability in our example). Your function should return a list that includes the plot of the ROC curve and a vector that contains the calculated area under the curve (AUC). Note that I recommend using a sequence of thresholds ranging from 0 to 1 at 0.01 intervals.
 
-```{r roc curve, warning=TRUE}
+```{r warning=TRUE}
 
 ROC <- function(x){
 
