@@ -1,0 +1,371 @@
+---
+title: "Homework 3"
+author: "Henry Vasquez and Christina Valore"
+date: "October 17, 2019"
+output:
+  pdf_document: default
+  html_document: default
+  allow_html: true
+---
+
+# Overview
+In this homework assignment, you will explore, analyze and model a data set containing information on crime for various neighborhoods of a major city. Each record has a response variable indicating whether or not the crime rate is above the median crime rate (1) or not (0). 
+ 
+Your objective is to build a binary logistic regression model on the training data set to predict whether the neighborhood will be at risk for high crime levels. You will provide classifications and probabilities for the evaluation data set using your binary logistic regression model. You can only use the variables given to you (or variables that you derive from the variables provided). Below is a short description of the variables of interest in the data set: 
+
+- zn: proportion of residential land zoned for large lots (over 25000 square feet) (predictor variable)
+- indus: proportion of non-retail business acres per suburb (predictor variable)
+- chas: a dummy var for whether the suburb borders the Charles River (1) or not (0) (predictor variable)
+- nox: nitrogen oxides concentration (parts per 10 million) (predictor variable)
+- rm: average number of rooms per dwelling (predictor variable)
+- age: proportion of owner-occupied units built prior to 1940 (predictor variable)
+- dis: weighted mean of distances to five Boston employment centers (predictor variable)
+- rad: index of accessibility to radial highways (predictor variable)
+- tax: full-value property-tax rate per \$10,000 (predictor variable)
+- ptratio: pupil-teacher ratio by town (predictor variable)
+- lstat: lower status of the population (percent) (predictor variable)
+- medv: median value of owner-occupied homes in $1000s (predictor variable)
+- target: whether the crime rate is above the median crime rate (1) or not (0) (response variable)
+
+
+# Data Exploration
+```{r load data}
+#load packages
+library(ggplot2); library(reshape); library(dplyr); library(tidyr); library(corrplot); library(kableExtra);
+library(tidyverse); library(psych); library(caTools); library (MASS); library(pscl); library(ROCR)
+
+#lets load the data
+crime_training_data_modified = read.csv("https://raw.githubusercontent.com/hvasquez81/Datasets/master/crime-training-data_modified.csv", stringsAsFactors = FALSE)
+eval = read.csv("https://raw.githubusercontent.com/hvasquez81/Datasets/master/crime-evaluation-data_modified.csv", stringsAsFactors = FALSE)
+
+
+set.seed(123)   #  set seed to ensure you always have same random numbers generated
+sample <- sample.split(crime_training_data_modified,SplitRatio = 0.80) 
+train <- subset(crime_training_data_modified, sample == TRUE) 
+test <- subset(crime_training_data_modified, sample == FALSE)
+dim(train) # view the dimensions
+dim(test)
+```
+
+
+For the training data set named crime-training-data-modified.csv, there are 466 total observations each with 12 different predictor variables and 1 response variable. The descriptions for all variables are availible above in the overview section. The evaluation set named crime-evaluation-data-modified.csv, has the same variables minus the response variable and only 40 observations. 
+
+Below the mean, median, min, max and standard deviations for all variables can be observed. The response variable and categorical vaiable (chas) are also included:
+
+
+### Summary Statistics for Variables
+```{r summary-predictor-stats, echo =FALSE}
+temp = do.call(data.frame,
+               list(n = apply(train, 2, length),
+                    mean = round(apply(train, 2, mean), 4),
+                    sd = round(apply(train, 2, sd), 4),
+                    median = round(apply(train, 2, median), 4),
+                    min = round(apply(train, 2, min), 4),
+                    max = round(apply(train, 2, max), 4)
+))
+
+temp %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+
+### Box-Plots 
+```{r boxplots, echo = FALSE}
+boxs = ggplot(gather(train), aes(key, value, fill = key))
+boxs = boxs + geom_boxplot(outlier.color = 'red') 
+boxs = boxs + facet_wrap(~key, scales = 'free')
+boxs = boxs + ggtitle("Box-Plots for all Crime Data Variables") 
+boxs = boxs + theme(plot.title = element_text(hjust = 0.5))
+boxs = boxs + xlab("Variables") + guides(fill = guide_legend(title = "variable"))
+boxs
+```
+
+
+There doesn't seem to be a huge issue among the variables as far as outliers. There are a few exceptions in the data in which outliers are present outside of the 1st and 4th quartiles. For example, the variables zn, rm, dis, lstat and medv have apparent outliers. The variable chas has 1 outlier present, but it's a factor so this can be ignored.
+
+
+### Histograms
+```{r histograms, echo = FALSE}
+histograms = ggplot(gather(train), aes(value, fill = key))
+histograms = histograms + geom_histogram(bins = 20) 
+histograms = histograms + facet_wrap(~key, scales = 'free')
+histograms = histograms + ggtitle("Histograms for all Crime Data Variables") 
+histograms = histograms + theme(plot.title = element_text(hjust = 0.5))
+histograms = histograms + xlab("Variables") + guides(fill = guide_legend(title = "variable"))
+histograms
+```
+
+
+Looking at the histograms produced for all variables, some appear to have a normal distribution while others do not. Medv and rm are the 2 variables that appear to be normally distributed while the rest are either bimodel or multimodal, skewed, or just factors.
+
+
+### Correlation 
+```{r Correlation, echo=FALSE}
+cor_matrix = round(cor(train), 2)
+corrplot::corrplot(cor_matrix, method = "circle", type = 'lower', order = 'hclust', tl.srt = 90)
+```
+
+
+Above is a lower correlation matrix showing the correlation between all variables. Blue being positively correlation and red meaning negatively correlated and the size of the circle implying how intense. The matrix is also ordered by correlation, meaning the positively correlated variables are shown at the top of the triangle and the negatively correlated variables at the bottom. Those variables above the nox row are almost all strongly positively correlated. While those under the rm row and before the nox column are mostly strongly negatively correlated.
+
+To look at the variables that are correlated to the target variable, look at the target column (column 2). The variables between the rad and nox rows are positively correlated to the target variable. The variables mdv, zn and dis are negatively correlated to the target variable. The variables rm, chas, and ptration have little to no correlation with the target variable. 
+
+This variables with no correlation to the target variable will want to be avoided when building the logistic model. Also, variables that are strongly correlated with eachother should not be included in the model or else this will violate the assumptions of logistic regression.
+
+
+### Missing Values
+There isn't any missing variables in the data set.
+
+
+# Data Preparation
+Since the data did not have missing values, we do not need to worry about fixing any NA's. There are some variables we can possibly exclude from the analysis since they may not be relevent to the purpose of the project or are not correlated to the data. For example the variable chas has over 400 observations with the value 0. Also, based on the correlation matrix the variable is not correlated to the target variable. The dummy variable is defined as 1 if the suburb borders the Charles River and 0 if not. Since the variable is not correlated to crime, it's better off exluding it from the logistic model.
+
+```{r, echo = FALSE}
+train = subset(train,select = -c(chas))
+test = subset(test,select = -c(chas))
+```
+
+There are also a couple of variables we can put into buckets. For example, the variable rm is the average number of rooms per dwelling. we'd assume that larger dwellings would be associated with higher income communities and therefore less crime. 
+
+### rm
+```{r rm hist, echo = FALSE}
+ggplot(train, aes(x = rm)) + 
+  geom_histogram(binwidth = 0.1) + 
+  geom_vline(aes(xintercept = quantile(rm, probs = 0.80),
+                 color = 'red',
+                 linetype = 'longdash')) +
+  geom_vline(aes(xintercept = quantile(rm, probs = 0.20),
+                 color = 'red',
+                 linetype = 'longdash')) +
+  ggtitle("Histogram for rm with bottom 20% and top 20% Outlined") + 
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "none")
+```
+
+
+Looking at the histogram above, we see the average rooms for the middle 60% is between `r quantile(train$rm, probs = 0.20)` and `r quantile(train$rm, probs = 0.80)`. We'll go ahead and name the buckets as "low" for those less than or equal to `r quantile(train$rm, probs = 0.20)`, "high" for those greater than or equal to `r quantile(train$rm, probs = 0.80)` and average for those in between.
+
+
+```{r rm-buckets, echo=FALSE}
+# train
+low = quantile(train$rm, probs = 0.20) 
+high = quantile(train$rm, probs = 0.80) 
+
+train = train %>% mutate(rm_group = ifelse(rm <= low, "low",
+                                   ifelse(rm >= high, "high", "average"))
+                         
+)
+
+# test 
+low = quantile(test$rm, probs = 0.20) 
+high = quantile(test$rm, probs = 0.80) 
+
+test = test %>% mutate(rm_group = ifelse(rm <= low, "low",
+                                   ifelse(rm >= high, "high", "average"))
+                         
+)
+```
+
+### nox
+Another variable that we will transform is nox. The nox variable measures nitrogen oxides concentration (parts per 10 million). The variable itself is positively correlated to the target variable, therefore we assume that areas with high concentrations of nitrogren oxides have higher crime rates.
+
+
+```{r nox-hist, echo=FALSE}
+ggplot(train, aes(x = nox)) + 
+  geom_histogram(bins = 30) + 
+  geom_vline(aes(xintercept = quantile(nox, probs = 0.80),
+                 color = 'red',
+                 linetype = 'longdash')) +
+  geom_vline(aes(xintercept = quantile(nox, probs = 0.20),
+                 color = 'red',
+                 linetype = 'longdash')) +
+  ggtitle("Histogram for Nox with bottom 20% and top 20% Outlined") + 
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "none")
+
+```
+
+
+We'll follow the same strategy for the rm variable and use the cutoffs for low nox to be `r quantile(train$nox, probs = 0.20)` and high nox to be `r quantile(train$nox, probs = 0.80)`. Average will be the values between the two.
+
+
+```{r nox-buckets, echo=FALSE}
+low = quantile(train$nox, probs = 0.20) 
+high = quantile(train$nox, probs = 0.80) 
+
+train = train %>% mutate(nox_group = ifelse(nox <= low, "low",
+                                   ifelse(nox >= high, "high", "average")) 
+)
+
+low = quantile(test$nox, probs = 0.20) 
+high = quantile(test$nox, probs = 0.80) 
+
+test = test %>% mutate(nox_group = ifelse(nox <= low, "low",
+                                   ifelse(nox >= high, "high", "average")) 
+)
+```
+
+### indus
+If we look at the histogram for indus, we see that most of the data is split in two. About half of the observations are under 10% and the other half are above 10%. See the histogram below:
+
+
+```{r indus-hist, echo=FALSE}
+ggplot(train, aes(x = indus)) + 
+  geom_histogram(bins = 30) + 
+  geom_vline(aes(xintercept = quantile(indus, probs = 0.58),
+                 color = 'red',
+                 linetype = 'longdash')) +
+  ggtitle("Histogram for Indus with bottom 58% Outlined") + 
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "none")
+
+```
+
+
+After plotting the histogram, we see that the quantile is split in two by the 58%. For the data set, we'll label those with indus less than or equal to `r quantile(train$indus, probs = 0.58)` as "average"" and those above as "high."
+
+
+```{r indus-group, echo=FALSE}
+average = quantile(train$indus, probs = 0.58)
+train = train %>% mutate(indus_group = ifelse(indus <= average, "average", "high"))
+
+average = quantile(test$indus, probs = 0.58)
+test = test %>% mutate(indus_group = ifelse(indus <= average, "average", "high"))
+```
+
+
+### ptratio
+The ptratio measures the pupil-teacher ratio by town. This means that the higher the ratio, the more students to teacher. We see high ratios in under funded schools and districts. We would also assume that crime hates are higher in these areas where school funding is low. See the histogram below:
+
+
+```{r ptratio-hist, echo=FALSE}
+ggplot(train, aes(x = ptratio)) + 
+  geom_histogram(binwidth = 0.2) + 
+  geom_vline(aes(xintercept = quantile(ptratio, probs = 0.75),
+                 color = 'red',
+                 linetype = 'longdash')) +
+  geom_vline(aes(xintercept = quantile(ptratio, probs = 0.25),
+                 color = 'red',
+                 linetype = 'longdash')) +
+  ggtitle("Histogram for ptratio with top 25% and bottom 25% Outlined") + 
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "none")
+
+```
+
+
+For this variable ptratios less than or equal to `r quantile(train$ptratio, 0.25)` will be named "low," those greater than or equal to `r quantile(train$ptratio, 0.75)` will be named "high" and anywhere between will be "average."
+
+
+```{r ptratio-group, echo=FALSE}
+low = quantile(train$ptratio, probs = 0.25) 
+high = quantile(train$ptratio, probs = 0.75) 
+
+train = train %>% mutate(ptratio_group = ifelse(ptratio <= low, "low",
+                                   ifelse(ptratio >= high, "high", "average")) 
+)
+
+low = quantile(test$ptratio, probs = 0.25) 
+high = quantile(test$ptratio, probs = 0.75) 
+
+test = test %>% mutate(ptratio_group = ifelse(ptratio <= low, "low",
+                                   ifelse(ptratio >= high, "high", "average")) 
+)
+```
+
+# Build Models
+First we build a model with original variables ONLY. Our AIC is 178.4, can we use stepwise to make this better?
+
+```{r trainingset-2, echo=FALSE}
+# all original variables
+or_full <- glm(target ~ zn + indus + nox + rm + age + dis + rad + tax + ptratio + lstat + medv, data = train, family = "binomial")
+summary(or_full)
+```
+
+```{r}
+# stepwise forward with ORIGINAL variables
+or_stepf <- or_full %>% stepAIC(trace = FALSE, direction ="forward")
+summary(or_stepf)
+```
+
+```{r}
+# stepwise backward with ORIGINAL variables
+or_stepb <- or_full %>% stepAIC(trace = FALSE, direction ="backward")
+summary(or_stepb)
+```
+
+We receive an error trying to use all variables that have been grouped, we can use stepwise to investigate the best model to avoid the 0/1 errors.
+```{r}
+# using new grouped variables
+new_full <- glm(target ~ zn + age + dis + rad + tax + lstat + medv + rm_group + nox_group + indus_group + ptratio_group, data = train, family = "binomial")
+summary(new_full)
+```
+
+
+```{r forward, echo=FALSE}
+# stepwise forward
+new_stepf <- new_full %>% stepAIC(trace = FALSE, direction ="forward")
+#coef(stepf)
+summary(new_stepf)
+```
+
+
+```{r backward}
+# stepwise backward
+new_stepb <- new_full %>% stepAIC(trace = FALSE, direction ="backward")
+#coef(stepb)
+summary(new_stepb)
+```
+
+
+```{r}
+# original variables only
+original <-  glm(target ~ zn + age + dis + rad + tax + lstat + medv, data = train, family = "binomial")
+summary(original)
+```
+
+
+# Select Models
+
+```{r}
+anova(or_full, test="Chisq")
+```
+
+```{r}
+anova(or_stepb, test="Chisq")
+```
+
+```{r}
+anova(or_stepf, test="Chisq")
+```
+
+```{r}
+pR2(or_full)
+pR2(or_stepb)
+pR2(or_stepf)
+```
+
+After assessing all, the model with all variables and the step backward or or_stepb gives the best results in terms of AIC and McFadden R^2. 
+
+## Predictions on test set
+
+```{r}
+fitted.results <- predict(or_stepb, test, type='response')
+fitted.results <- ifelse(fitted.results > 0.5,1,0)
+
+misClasificError <- mean(fitted.results != test$target)
+print(paste('Accuracy',1-misClasificError))
+```
+
+## ROC and AUC
+
+```{r}
+p <- predict(or_stepb, test, type="response")
+pr <- prediction(p, test$target)
+prf <- performance(pr, measure = "tpr", x.measure = "fpr")
+plot(prf)
+
+auc <- performance(pr, measure = "auc")
+auc <- auc@y.values[[1]]
+auc
+```
+
