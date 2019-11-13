@@ -1,0 +1,147 @@
+---
+title: 'Homework 4:'
+author: "Christina Valore, Henry Vazquez"
+date: "11/11/2019"
+output: html_document
+---
+
+## Overview
+
+In this homework assignment, you will explore, analyze and model a data set containing approximately 8000 records representing a customer at an auto insurance company. Each record has two response variables. The first response variable, TARGET_FLAG, is a 1 or a 0. A “1” means that the person was in a car crash. A zero means that the person was not in a car crash. The second response variable is TARGET_AMT. This value is zero if the person did not crash their car. But if they did crash their car, this number will be a value greater than zero.
+Your objective is to build multiple linear regression and binary logistic regression models on the training data to predict the probability that a person will crash their car and also the amount of money it will cost if the person does crash their car. You can only use the variables given to you (or variables that you derive from the variables provided).
+
+
+```{r warning=FALSE}
+library(caTools); library (funModeling); library (varhandle); library (dplyr); library (Hmisc)
+```
+
+We start by importing the data into GitHub, removing the index and looking at the structure of the data to ensure all variables are the proper type.
+```{r}
+df_train<-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/Homework4/insurance_training_data.csv", stringsAsFactors = TRUE)
+df_eval<-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/Homework4/insurance-evaluation-data.csv",stringsAsFactors = TRUE)
+
+df_train<-df_train[-c(1)] # remove index column
+df_eval<-df_eval[-c(1)]
+str(df_train)
+```
+
+Remove the dollar signs and commas from all values that have numbers. We do this as we want to convert those variables to numerics. 
+```{r}
+df_train$INCOME<-gsub("[\\$,]", "", df_train$INCOME)
+df_train$HOME_VAL<-gsub("[\\$,]", "", df_train$HOME_VAL)
+df_train$BLUEBOOK<-gsub("[\\$,]", "", df_train$BLUEBOOK)
+df_train$OLDCLAIM<-gsub("[\\$,]", "",df_train$OLDCLAIM)
+```
+
+
+After removing any characters, we are now ready to convert to numerics
+```{r}
+df_train$INCOME<-as.numeric(df_train$INCOME)
+df_train$HOME_VAL<-as.numeric(df_train$HOME_VAL)
+df_train$BLUEBOOK<-as.numeric(df_train$BLUEBOOK)
+df_train$OLDCLAIM<-as.numeric(df_train$OLDCLAIM)
+```
+
+Next we split the df_train into a train and test set using a split ratio of 80:20
+```{r}
+# split train in train and test 
+set.seed(123)
+sample <- sample.split(df_train,SplitRatio = 0.80) 
+train <- subset(df_train, sample == TRUE) 
+test <- subset(df_train, sample == FALSE)
+```
+
+Gandering at the train data, we notice NAs in:
+- age, 
+- years on job (YOJ)
+- income
+- home value (home_val)
+- car age (car_age)
+
+In the next section we will see the probability of NAs and 0's and remove variables if necessary. 
+```{r}
+summary(train)
+```
+
+###NAs
+After using the FUN package, we can see there are no variables with probablity of NAs > 20%, so no variables need to be excluded. 
+
+### Zeros
+
+Variables that have p(zero's) > 60% are: 
+- TARGET_FLAG
+- TARGET_AMT
+- KIDSDRIV
+- HOMEKIDS
+- OLDCLAIM
+- CLM_FREQ
+
+```{r}
+status <- df_status(train, print_results = TRUE)
+filter(status, p_zeros > 60)  %>% .$variable
+```
+We will remove all variables with probablity of 0's > 60%  exluding the target_flag and target_amt variables as these are our explanatory variables.
+
+```{r}
+# remove from train and subset into train2
+train2 <- select(train, -c(KIDSDRIV,HOMEKIDS,OLDCLAIM,CLM_FREQ))
+
+#remove variables from test set
+test <- select(test, -c(KIDSDRIV,HOMEKIDS,OLDCLAIM,CLM_FREQ))
+```
+
+Next we look at the frequency of variables that are factors or characters. Easily we can see variables with the highest factor levels such that we can say:
+- most of the drivers are not single parents
+- most of the drivers are married 
+- most are female
+- most have finished highschool at least
+- most work blue collar jobs
+- most use the car for leisure
+- most of the cars are SVU's
+- most are not red cars
+- most did not have their license revoke in the past 7 years
+- most live/work in urban area
+
+```{r}
+freq(train2)
+```
+
+Looking at the distributions of the remaining variables, we can see that income,YOJ, TIV, MVR_PTS are all skewed right.
+```{r}
+plot_num(train2)
+```
+
+We can also see variables with skewness and high kurtosis (indicating outliers) here. As seen before visually, we can verify here that YOJ and income are higlyy skewed and have high kurosis. Also bluebook, tif and mvr_pts are also similar. 
+
+```{r}
+profiling_num(train2)
+```
+
+
+### Impute values
+
+We impute the missing NA values with the median using the Hmisc package:
+
+```{r}
+train2$AGE<-impute(train2$AGE, median)
+train2$YOJ<-impute(train2$YOJ, median)
+train2$INCOME<-impute(train2$INCOME, median)
+train2$CAR_AGE<-impute(train2$CAR_AGE, median)
+```
+
+### Create new variable
+
+Our new variable will be PTS_AGE = MVR_PTS/AGE, which says that if the ratio is higher that means you are a younger driver with more points. 
+
+```{r}
+# create ratio in train_2 and test set
+train2$PTS_AGE <- train2$MVR_PTS/train2$AGE
+test$PTS_AGE <- test$MVR_PTS/test$AGE
+
+# remove variables fromt train2
+train2 <- select(train2, -c(MVR_PTS,AGE))
+
+#remove variables from test set
+test <- select(test, -c(MVR_PTS,AGE))
+```
+
