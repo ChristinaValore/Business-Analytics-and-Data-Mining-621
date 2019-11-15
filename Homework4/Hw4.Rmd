@@ -12,14 +12,22 @@ Your objective is to build multiple linear regression and binary logistic regres
 
 
 ```{r warning=FALSE}
-library(caTools); library (funModeling); library (varhandle); library (dplyr); library (Hmisc)
+library(caTools);
+library (funModeling);
+library (varhandle);
+library (dplyr);
+library (Hmisc);
+library (MASS);
+library(pscl);
 ```
+
+
+#1/2 Data Exploration and Data Preparation
 
 We start by importing the data into GitHub, removing the index and looking at the structure of the data to ensure all variables are the proper type.
 ```{r}
 df_train<-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/Homework4/insurance_training_data.csv", stringsAsFactors = TRUE)
 df_eval<-read.csv("https://raw.githubusercontent.com/ChristinaValore/Business-Analytics-and-Data-Mining-621/master/Homework4/insurance-evaluation-data.csv",stringsAsFactors = TRUE)
-
 df_train<-df_train[-c(1)] # remove index column
 df_eval<-df_eval[-c(1)]
 str(df_train)
@@ -31,6 +39,12 @@ df_train$INCOME<-gsub("[\\$,]", "", df_train$INCOME)
 df_train$HOME_VAL<-gsub("[\\$,]", "", df_train$HOME_VAL)
 df_train$BLUEBOOK<-gsub("[\\$,]", "", df_train$BLUEBOOK)
 df_train$OLDCLAIM<-gsub("[\\$,]", "",df_train$OLDCLAIM)
+
+#same for df_eval
+df_eval$INCOME<-gsub("[\\$,]", "", df_eval$INCOME)
+df_eval$HOME_VAL<-gsub("[\\$,]", "", df_eval$HOME_VAL)
+df_eval$BLUEBOOK<-gsub("[\\$,]", "", df_eval$BLUEBOOK)
+df_eval$OLDCLAIM<-gsub("[\\$,]", "",df_eval$OLDCLAIM)
 ```
 
 
@@ -40,6 +54,12 @@ df_train$INCOME<-as.numeric(df_train$INCOME)
 df_train$HOME_VAL<-as.numeric(df_train$HOME_VAL)
 df_train$BLUEBOOK<-as.numeric(df_train$BLUEBOOK)
 df_train$OLDCLAIM<-as.numeric(df_train$OLDCLAIM)
+
+#same for df_eval
+df_eval$INCOME<-as.numeric(df_eval$INCOME)
+df_eval$HOME_VAL<-as.numeric(df_eval$HOME_VAL)
+df_eval$BLUEBOOK<-as.numeric(df_eval$BLUEBOOK)
+df_eval$OLDCLAIM<-as.numeric(df_eval$OLDCLAIM)
 ```
 
 Next we split the df_train into a train and test set using a split ratio of 80:20
@@ -85,7 +105,6 @@ We will remove all variables with probablity of 0's > 60%  exluding the target_f
 ```{r}
 # remove from train and subset into train2
 train2 <- select(train, -c(KIDSDRIV,HOMEKIDS,OLDCLAIM,CLM_FREQ))
-
 #remove variables from test set
 test <- select(test, -c(KIDSDRIV,HOMEKIDS,OLDCLAIM,CLM_FREQ))
 ```
@@ -127,6 +146,13 @@ train2$AGE<-impute(train2$AGE, median)
 train2$YOJ<-impute(train2$YOJ, median)
 train2$INCOME<-impute(train2$INCOME, median)
 train2$CAR_AGE<-impute(train2$CAR_AGE, median)
+
+#df_eval
+df_eval$AGE<-impute(df_eval$AGE, median)
+df_eval$YOJ<-impute(df_eval$YOJ, median)
+df_eval$INCOME<-impute(df_eval$INCOME, median)
+df_eval$CAR_AGE<-impute(df_eval$CAR_AGE, median)
+
 ```
 
 ### Create new variable
@@ -137,11 +163,180 @@ Our new variable will be PTS_AGE = MVR_PTS/AGE, which says that if the ratio is 
 # create ratio in train_2 and test set
 train2$PTS_AGE <- train2$MVR_PTS/train2$AGE
 test$PTS_AGE <- test$MVR_PTS/test$AGE
-
 # remove variables fromt train2
 train2 <- select(train2, -c(MVR_PTS,AGE))
-
 #remove variables from test set
 test <- select(test, -c(MVR_PTS,AGE))
 ```
 
+
+
+
+#3 Build Models
+
+###Predicting car crash
+
+```{r logit_1}
+#all variables - variables that have effect on payout price
+logit_1 = glm(TARGET_FLAG ~ YOJ + INCOME + PARENT1 + HOME_VAL + MSTATUS + SEX + EDUCATION + JOB + TRAVTIME + CAR_USE + TIF + CAR_TYPE + RED_CAR + REVOKED + URBANICITY + PTS_AGE,
+              data = train2, 
+              family = 'binomial')
+summary(logit_1)
+```
+
+
+All predictors and their corresponding coefficients fall inline with their theoretical effect with the exception of Sex. The theoretical effect suggest females are more at risk, but the model has a negative coeeficient, suggesting the opposite. However, sex is not statistically significant therefore we will not continue with the variable going forward. The variable YOJ whose coefficient is inline with the theoretical effect turned out to be statistically insignificant as well.  Single parents were suggested more likely to be involved in an accident according to the model while Urabn City Rural suggests less or a risk. The red car theory also suggests to be insignificant based on its coefficient and its p-value. We'll go ahead and remove contradicting and insignificant variables in model 2. Our created variable also tends to be significant with a corresponding value as well.
+
+
+
+```{r logit_2}
+#all variables - variables that have effect on payout price
+logit_2 = glm(TARGET_FLAG ~ INCOME + PARENT1 + HOME_VAL + MSTATUS + EDUCATION + JOB + TRAVTIME + CAR_USE + TIF + CAR_TYPE + REVOKED + URBANICITY + PTS_AGE,
+              data = train2, 
+              family = 'binomial')
+summary(logit_2)
+```
+
+
+
+In this model, all coefficients fall in line with their theoretical effects. Only concern would be a majority of Job categories are not satistically significant. For the next model, well go ahead and remove these.
+
+
+
+
+
+```{r logit_3}
+#all variables - variables that have effect on payout price
+logit_3 = glm(TARGET_FLAG ~ INCOME + PARENT1 + HOME_VAL + MSTATUS + EDUCATION + TRAVTIME + CAR_USE + TIF + CAR_TYPE + REVOKED + URBANICITY + PTS_AGE,
+              data = train2, 
+              family = 'binomial')
+summary(logit_3)
+```
+
+
+The model has a majority of the variables with significant p-values, with the exception of 2 categories of education (high school) and car type (truck). All of the coefficients of the variables also fall in line with theoretical effects.
+
+
+
+
+###Predicting Amount of Money
+
+
+```{r lm_1}
+#select all where target_flag = 1
+#train
+train2_claims = train2 %>% filter(TARGET_FLAG == 1)
+#test_claims
+test_claims = test %>% filter(TARGET_FLAG == 1)
+
+#create model with all variables
+lm_1 = lm(TARGET_AMT ~ .-TARGET_FLAG, data = train2_claims)
+summary(lm_1)
+```
+
+A lot of the variables are insignificant which makes sense. Most of these variables' theoretical effects have to do with their probabilities influencing accidents. Now since we're looking at claim amount, the significant variables make sense with minor exceptions. Marital status no, suggests higher payments claim which is not what would originally be expected. The positive coefficient of bluebook makes sense, since the company measures value for vehicles are higher bluebook value suggests higher payout. Car age is also in line with theoretical effect. For the next model, we'll remove the insignificant predictors with the exception of car type since it should have an effect on amount.
+
+
+```{r lm_2}
+lm_2 = lm(TARGET_AMT ~ MSTATUS + BLUEBOOK + CAR_AGE + CAR_TYPE, data = train2_claims)
+summary(lm_2)
+```
+
+The predictors' coefficients all align with theoretical values. THe only issue would be car type not having a significant p-value. We'll go ahead and remove this in the final model
+
+
+```{r lm_3}
+lm_3 = lm(TARGET_AMT ~ MSTATUS + BLUEBOOK + CAR_AGE, data = train2_claims)
+summary(lm_3)
+```
+
+In this linear model, the coefficients are in line with theoretical effects as well.
+
+
+
+
+#4. SELECT MODELS
+
+Linear Models
+
+```{r lm_1 plots}
+par(mfrow = c(2,2))
+plot(lm_1)
+```
+
+
+```{r lm_2 plots}
+par(mfrow = c(2,2))
+plot(lm_2)
+```
+
+
+
+```{r lm_3 plots}
+par(mfrow = c(2,2))
+plot(lm_3)
+```
+
+```{r mse}
+amt = test_claims$TARGET_AMT
+summary(test_claims)
+
+as.matrix(c(mean((amt - predict.lm(lm_1, newdata = test_claims))^2, na.rm = TRUE),
+            mean((amt - predict.lm(lm_2, newdata = test_claims))^2, na.rm = TRUE),
+            mean((amt - predict.lm(lm_3, newdata = test_claims))^2, na.rm = TRUE)
+            )
+)
+```
+
+
+
+Logit Models
+
+```{r eval logit_1}
+anova(logit_1, test = 'Chisq')
+```
+
+```{r eval logit_2}
+anova(logit_2, test = 'Chisq')
+```
+
+```{r eval logit_3}
+anova(logit_3, test = 'Chisq')
+```
+
+
+
+
+```{r mcFaddens R2}
+pR2(logit_1);
+pR2(logit_2);
+pR2(logit_3);
+```
+
+
+
+```{r logit_2 pred}
+fitted.results = predict(logit_2, test, type = 'response')
+fitted.results = ifelse(fitted.results > 0.5, 1, 0)
+
+misClasificError = mean(fitted.results != test$TARGET_FLAG, na.rm = TRUE)
+print(paste('Accurancy', round(1-misClasificError, 3)))
+```
+
+
+
+
+
+```{r prediction}
+#logistic
+df_eval$PTS_AGE = df_eval$MVR_PTS/df_eval$AGE
+summary(df_eval)
+eval_results = predict(logit_2, df_eval, type = 'response')
+eval_results = ifelse(eval_results > 0.5, 1, 0)
+
+#write.csv(eval_results, file = "logistic_model_eval.csv")
+
+#linear
+eval_amt = predict(lm_2, df_eval)
+#write.csv(eval_amt, file = "linear_model_eval.csv")
+```
